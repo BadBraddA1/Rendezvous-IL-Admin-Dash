@@ -47,7 +47,18 @@ export function VolunteerScheduleDialog({
   }
 
   const [assignedDate, setAssignedDate] = useState(volunteer.assigned_date || "unassigned")
-  const [timeSlot, setTimeSlot] = useState(volunteer.time_slot || "unassigned")
+  // Parse existing time_slot into base and prayer position
+  const parseTimeSlot = (slot: string | null | undefined) => {
+    if (!slot) return { base: "unassigned", prayer: "Opening Prayer" }
+    if (slot.includes(" - ")) {
+      const [base, prayer] = slot.split(" - ")
+      return { base, prayer }
+    }
+    return { base: slot, prayer: "Opening Prayer" }
+  }
+  const parsed = parseTimeSlot(volunteer.time_slot)
+  const [baseTimeSlot, setBaseTimeSlot] = useState(parsed.base)
+  const [prayerPosition, setPrayerPosition] = useState(parsed.prayer)
   const [notes, setNotes] = useState(volunteer.notes || "")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
@@ -55,7 +66,9 @@ export function VolunteerScheduleDialog({
   // Sync state when volunteer changes (controlled mode re-opens for a different person)
   useEffect(() => {
     setAssignedDate(volunteer.assigned_date || "unassigned")
-    setTimeSlot(volunteer.time_slot || "unassigned")
+    const p = parseTimeSlot(volunteer.time_slot)
+    setBaseTimeSlot(p.base)
+    setPrayerPosition(p.prayer)
     setNotes(volunteer.notes || "")
   }, [volunteer.id, volunteer.assigned_date, volunteer.time_slot, volunteer.notes])
 
@@ -70,12 +83,22 @@ export function VolunteerScheduleDialog({
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
+      // Combine base time slot with prayer position for Leading prayer volunteers
+      let finalTimeSlot: string | null = null
+      if (baseTimeSlot !== "unassigned") {
+        if (volunteer.volunteer_type === "Leading prayer") {
+          finalTimeSlot = `${baseTimeSlot} - ${prayerPosition}`
+        } else {
+          finalTimeSlot = baseTimeSlot
+        }
+      }
+
       const response = await fetch(`/api/volunteers/${volunteer.id}/schedule`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           assigned_date: assignedDate === "unassigned" ? null : assignedDate,
-          time_slot: timeSlot === "unassigned" ? null : timeSlot,
+          time_slot: finalTimeSlot,
           notes: notes || null,
         }),
       })
@@ -120,26 +143,28 @@ export function VolunteerScheduleDialog({
 
         <div className="space-y-2">
           <Label htmlFor="time-slot">Time Slot</Label>
-          <Select value={timeSlot} onValueChange={setTimeSlot}>
+          <Select value={baseTimeSlot} onValueChange={setBaseTimeSlot}>
             <SelectTrigger id="time-slot"><SelectValue placeholder="Select time slot" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">Unassigned</SelectItem>
-              {volunteer.volunteer_type === "Leading prayer" ? (
-                <>
-                  <SelectItem value="Morning Devotion - Opening Prayer">Morning Devotion - Opening Prayer</SelectItem>
-                  <SelectItem value="Morning Devotion - Closing Prayer">Morning Devotion - Closing Prayer</SelectItem>
-                  <SelectItem value="Evening Devotion - Opening Prayer">Evening Devotion - Opening Prayer</SelectItem>
-                  <SelectItem value="Evening Devotion - Closing Prayer">Evening Devotion - Closing Prayer</SelectItem>
-                </>
-              ) : (
-                <>
-                  <SelectItem value="Morning Devotion">Morning Devotion</SelectItem>
-                  <SelectItem value="Evening Devotion">Evening Devotion</SelectItem>
-                </>
-              )}
+              <SelectItem value="Morning Devotion">Morning Devotion</SelectItem>
+              <SelectItem value="Evening Devotion">Evening Devotion</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        {volunteer.volunteer_type === "Leading prayer" && baseTimeSlot !== "unassigned" && (
+          <div className="space-y-2">
+            <Label htmlFor="prayer-position">Prayer Position</Label>
+            <Select value={prayerPosition} onValueChange={setPrayerPosition}>
+              <SelectTrigger id="prayer-position"><SelectValue placeholder="Select prayer position" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Opening Prayer">Opening Prayer</SelectItem>
+                <SelectItem value="Closing Prayer">Closing Prayer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="notes">Notes (Optional)</Label>
