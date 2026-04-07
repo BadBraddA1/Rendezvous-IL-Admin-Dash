@@ -10,7 +10,7 @@ const PUBLIC_ADMIN_PATHS = [
 // Simple auth token - login route sets this exact value when password is correct
 const AUTH_TOKEN = "rendezvous2026_authenticated"
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Only protect /admin routes
