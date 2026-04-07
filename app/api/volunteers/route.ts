@@ -4,6 +4,13 @@ import { getDb } from "@/lib/db"
 export async function GET() {
   try {
     const sql = getDb()
+
+    // Ensure prayer_position column exists before querying it
+    await sql`
+      ALTER TABLE volunteer_signups
+      ADD COLUMN IF NOT EXISTS prayer_position TEXT CHECK (prayer_position IN ('opening', 'closing'))
+    `
+
     const volunteers = await sql`
       SELECT 
         vs.id,
