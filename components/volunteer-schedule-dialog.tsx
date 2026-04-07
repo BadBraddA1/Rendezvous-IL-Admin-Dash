@@ -124,8 +124,19 @@ export function VolunteerScheduleDialog({
             <SelectTrigger id="time-slot"><SelectValue placeholder="Select time slot" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">Unassigned</SelectItem>
-              <SelectItem value="Morning Devotion">Morning Devotion</SelectItem>
-              <SelectItem value="Evening Devotion">Evening Devotion</SelectItem>
+              {volunteer.volunteer_type === "Leading prayer" ? (
+                <>
+                  <SelectItem value="Morning Devotion - Opening Prayer">Morning Devotion - Opening Prayer</SelectItem>
+                  <SelectItem value="Morning Devotion - Closing Prayer">Morning Devotion - Closing Prayer</SelectItem>
+                  <SelectItem value="Evening Devotion - Opening Prayer">Evening Devotion - Opening Prayer</SelectItem>
+                  <SelectItem value="Evening Devotion - Closing Prayer">Evening Devotion - Closing Prayer</SelectItem>
+                </>
+              ) : (
+                <>
+                  <SelectItem value="Morning Devotion">Morning Devotion</SelectItem>
+                  <SelectItem value="Evening Devotion">Evening Devotion</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>

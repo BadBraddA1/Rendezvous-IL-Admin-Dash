@@ -54,7 +54,14 @@ const EVENT_DAYS = [
   { date: "2026-05-08", label: "Friday, May 8" },
 ]
 
-const TIME_SLOTS = ["Morning Devotion", "Evening Devotion"]
+const TIME_SLOTS = [
+  "Morning Devotion",
+  "Morning Devotion - Opening Prayer",
+  "Morning Devotion - Closing Prayer",
+  "Evening Devotion",
+  "Evening Devotion - Opening Prayer",
+  "Evening Devotion - Closing Prayer",
+]
 
 function StatusBadge({ status, emailSent }: { status: string | null; emailSent: boolean }) {
   if (!emailSent) return <Badge variant="outline" className="text-xs gap-1"><HelpCircleIcon className="size-3" />Not Sent</Badge>
