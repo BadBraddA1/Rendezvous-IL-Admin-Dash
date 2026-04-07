@@ -21,7 +21,7 @@ interface Volunteer {
 const PRAYER_TYPES = ["Leading Prayer", "Prayer", "Opening Prayer", "Closing Prayer"]
 
 function isPrayerRole(type: string) {
-  return PRAYER_TYPES.some((t) => type.toLowerCase().includes("prayer"))
+  return PRAYER_TYPES.some((t) => type.toLowerCase() === t.toLowerCase())
 }
 
 interface VolunteerScheduleDialogProps {
