@@ -1,0 +1,48 @@
+import { type NextRequest, NextResponse } from "next/server"
+import { getDb } from "@/lib/db"
+
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const sql = getDb()
+    const { id } = await params
+    const body = await request.json().catch(() => ({}))
+    const { room_keys } = body
+
+    // Build the update based on whether room keys are provided
+    const result = room_keys && Array.isArray(room_keys) && room_keys.length > 0
+      ? await sql`
+          UPDATE registrations 
+          SET 
+            checked_in = TRUE,
+            checked_in_at = NOW(),
+            room_keys = ${room_keys},
+            updated_at = NOW()
+          WHERE id = ${id}
+          RETURNING *
+        `
+      : await sql`
+          UPDATE registrations 
+          SET 
+            checked_in = TRUE,
+            checked_in_at = NOW(),
+            updated_at = NOW()
+          WHERE id = ${id}
+          RETURNING *
+        `
+
+    if (result.length === 0) {
+      return NextResponse.json({ error: "Registration not found" }, { status: 404 })
+    }
+
+    console.log(`[v0] Checked in registration ${id}`)
+
+    return NextResponse.json({
+      success: true,
+      checked_in_at: result[0].checked_in_at,
+      checked_in: true,
+    })
+  } catch (error) {
+    console.error("[v0] Error checking in:", error)
+    return NextResponse.json({ error: "Failed to check in" }, { status: 500 })
+  }
+}
