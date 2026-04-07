@@ -14,6 +14,7 @@ interface Volunteer {
   volunteer_type: string
   assigned_date?: string | null
   time_slot?: string | null
+  prayer_type?: string | null
   notes?: string | null
 }
 
@@ -47,18 +48,8 @@ export function VolunteerScheduleDialog({
   }
 
   const [assignedDate, setAssignedDate] = useState(volunteer.assigned_date || "unassigned")
-  // Parse existing time_slot into base and prayer position
-  const parseTimeSlot = (slot: string | null | undefined) => {
-    if (!slot) return { base: "unassigned", prayer: "Opening Prayer" }
-    if (slot.includes(" - ")) {
-      const [base, prayer] = slot.split(" - ")
-      return { base, prayer }
-    }
-    return { base: slot, prayer: "Opening Prayer" }
-  }
-  const parsed = parseTimeSlot(volunteer.time_slot)
-  const [baseTimeSlot, setBaseTimeSlot] = useState(parsed.base)
-  const [prayerPosition, setPrayerPosition] = useState(parsed.prayer)
+  const [baseTimeSlot, setBaseTimeSlot] = useState(volunteer.time_slot || "unassigned")
+  const [prayerPosition, setPrayerPosition] = useState(volunteer.prayer_type || "Opening Prayer")
   const [notes, setNotes] = useState(volunteer.notes || "")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
@@ -66,11 +57,10 @@ export function VolunteerScheduleDialog({
   // Sync state when volunteer changes (controlled mode re-opens for a different person)
   useEffect(() => {
     setAssignedDate(volunteer.assigned_date || "unassigned")
-    const p = parseTimeSlot(volunteer.time_slot)
-    setBaseTimeSlot(p.base)
-    setPrayerPosition(p.prayer)
+    setBaseTimeSlot(volunteer.time_slot || "unassigned")
+    setPrayerPosition(volunteer.prayer_type || "Opening Prayer")
     setNotes(volunteer.notes || "")
-  }, [volunteer.id, volunteer.assigned_date, volunteer.time_slot, volunteer.notes])
+  }, [volunteer.id, volunteer.assigned_date, volunteer.time_slot, volunteer.prayer_type, volunteer.notes])
 
   const eventDates = [
     { value: "2026-05-04", label: "Monday, May 4" },
@@ -83,22 +73,13 @@ export function VolunteerScheduleDialog({
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
-      // Combine base time slot with prayer position for Leading prayer volunteers
-      let finalTimeSlot: string | null = null
-      if (baseTimeSlot !== "unassigned") {
-        if (volunteer.volunteer_type === "Leading prayer") {
-          finalTimeSlot = `${baseTimeSlot} - ${prayerPosition}`
-        } else {
-          finalTimeSlot = baseTimeSlot
-        }
-      }
-
       const response = await fetch(`/api/volunteers/${volunteer.id}/schedule`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           assigned_date: assignedDate === "unassigned" ? null : assignedDate,
-          time_slot: finalTimeSlot,
+          time_slot: baseTimeSlot === "unassigned" ? null : baseTimeSlot,
+          prayer_type: volunteer.volunteer_type === "Leading prayer" && baseTimeSlot !== "unassigned" ? prayerPosition : null,
           notes: notes || null,
         }),
       })

@@ -12,6 +12,7 @@ export async function GET() {
         vs.volunteer_type,
         vs.assigned_date,
         vs.time_slot,
+        vs.prayer_type,
         vs.notes,
         vs.created_at,
         vs.schedule_status,

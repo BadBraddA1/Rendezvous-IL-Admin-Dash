@@ -36,6 +36,7 @@ interface Volunteer {
   volunteer_type: string
   assigned_date: string | null
   time_slot: string | null
+  prayer_type: string | null
   notes: string | null
   schedule_status: string | null
   schedule_email_sent_at: string | null
@@ -54,14 +55,7 @@ const EVENT_DAYS = [
   { date: "2026-05-08", label: "Friday, May 8" },
 ]
 
-const TIME_SLOTS = [
-  "Morning Devotion",
-  "Morning Devotion - Opening Prayer",
-  "Morning Devotion - Closing Prayer",
-  "Evening Devotion",
-  "Evening Devotion - Opening Prayer",
-  "Evening Devotion - Closing Prayer",
-]
+const TIME_SLOTS = ["Morning Devotion", "Evening Devotion"]
 
 function StatusBadge({ status, emailSent }: { status: string | null; emailSent: boolean }) {
   if (!emailSent) return <Badge variant="outline" className="text-xs gap-1"><HelpCircleIcon className="size-3" />Not Sent</Badge>
@@ -360,7 +354,9 @@ export default function VolunteersPage() {
                             {vols.map((vol) => (
                               <div key={vol.id} className="space-y-1">
                                 <p className="text-xs font-medium leading-tight truncate">{vol.volunteer_name}</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight truncate">{vol.volunteer_type}</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight truncate">
+                                  {vol.volunteer_type}{vol.prayer_type ? ` - ${vol.prayer_type}` : ""}
+                                </p>
                                 <StatusBadge status={vol.schedule_status} emailSent={!!vol.schedule_email_sent_at} />
                                 <Button
                                   size="sm"

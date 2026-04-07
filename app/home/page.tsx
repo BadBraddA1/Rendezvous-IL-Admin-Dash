@@ -36,14 +36,7 @@ const EVENT_DAYS = [
   { date: "2026-05-07", label: "Thursday, May 7" },
   { date: "2026-05-08", label: "Friday, May 8" },
 ]
-const TIME_SLOTS = [
-  "Morning Devotion",
-  "Morning Devotion - Opening Prayer",
-  "Morning Devotion - Closing Prayer",
-  "Evening Devotion",
-  "Evening Devotion - Opening Prayer",
-  "Evening Devotion - Closing Prayer",
-]
+const TIME_SLOTS = ["Morning Devotion", "Evening Devotion"]
 
 export default function HomePage() {
   const [families, setFamilies] = useState<CheckedInFamily[]>([])
