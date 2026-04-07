@@ -15,12 +15,12 @@ function serializeRow(row: any) {
   return serialized
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const sql = getDb()
     const body = await request.json()
     const { first_name, age, date_of_birth, is_baptized, person_cost } = body
-    const id = params.id
 
     const result = await sql`
       UPDATE family_members
@@ -45,10 +45,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const sql = getDb()
-    const id = params.id
 
     await sql`
       DELETE FROM family_members WHERE id = ${id}
