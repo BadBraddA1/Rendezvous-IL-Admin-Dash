@@ -10,6 +10,7 @@ export async function GET() {
         vs.registration_id,
         vs.volunteer_name,
         vs.volunteer_type,
+        vs.prayer_position,
         vs.assigned_date,
         vs.time_slot,
         vs.notes,

@@ -15,6 +15,13 @@ interface Volunteer {
   assigned_date?: string | null
   time_slot?: string | null
   notes?: string | null
+  prayer_position?: string | null
+}
+
+const PRAYER_TYPES = ["Leading Prayer", "Prayer", "Opening Prayer", "Closing Prayer"]
+
+function isPrayerRole(type: string) {
+  return PRAYER_TYPES.some((t) => type.toLowerCase().includes("prayer"))
 }
 
 interface VolunteerScheduleDialogProps {
@@ -49,6 +56,7 @@ export function VolunteerScheduleDialog({
   const [assignedDate, setAssignedDate] = useState(volunteer.assigned_date || "unassigned")
   const [timeSlot, setTimeSlot] = useState(volunteer.time_slot || "unassigned")
   const [notes, setNotes] = useState(volunteer.notes || "")
+  const [prayerPosition, setPrayerPosition] = useState(volunteer.prayer_position || "unassigned")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
@@ -57,7 +65,8 @@ export function VolunteerScheduleDialog({
     setAssignedDate(volunteer.assigned_date || "unassigned")
     setTimeSlot(volunteer.time_slot || "unassigned")
     setNotes(volunteer.notes || "")
-  }, [volunteer.id, volunteer.assigned_date, volunteer.time_slot, volunteer.notes])
+    setPrayerPosition(volunteer.prayer_position || "unassigned")
+  }, [volunteer.id, volunteer.assigned_date, volunteer.time_slot, volunteer.notes, volunteer.prayer_position])
 
   const eventDates = [
     { value: "2026-05-04", label: "Monday, May 4" },
@@ -77,6 +86,9 @@ export function VolunteerScheduleDialog({
           assigned_date: assignedDate === "unassigned" ? null : assignedDate,
           time_slot: timeSlot === "unassigned" ? null : timeSlot,
           notes: notes || null,
+          prayer_position: isPrayerRole(volunteer.volunteer_type)
+            ? prayerPosition === "unassigned" ? null : prayerPosition
+            : null,
         }),
       })
 
@@ -129,6 +141,23 @@ export function VolunteerScheduleDialog({
             </SelectContent>
           </Select>
         </div>
+
+        {isPrayerRole(volunteer.volunteer_type) && (
+          <div className="space-y-2">
+            <Label htmlFor="prayer-position">Prayer Position</Label>
+            <Select value={prayerPosition} onValueChange={setPrayerPosition}>
+              <SelectTrigger id="prayer-position"><SelectValue placeholder="Select position" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                <SelectItem value="opening">Opening Prayer</SelectItem>
+                <SelectItem value="closing">Closing Prayer</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Specify whether this person leads the opening or closing prayer for their session.
+            </p>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="notes">Notes (Optional)</Label>

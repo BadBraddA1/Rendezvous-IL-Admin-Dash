@@ -34,6 +34,7 @@ interface Volunteer {
   registration_id: number
   volunteer_name: string
   volunteer_type: string
+  prayer_position: string | null
   assigned_date: string | null
   time_slot: string | null
   notes: string | null
@@ -303,11 +304,11 @@ export default function VolunteersPage() {
             </div>
           )}
 
-          {/* Full grid: all 5 days × 2 sessions, always shown */}
+          {/* Full grid: all 5 days × 2 sessions */}
           <div className="overflow-x-auto -mx-4 px-4">
-            <div className="min-w-[640px]">
+            <div className="min-w-[700px]">
               {/* Column headers */}
-              <div className="grid grid-cols-[120px_1fr_1fr_1fr_1fr_1fr] gap-2 mb-2">
+              <div className="grid grid-cols-[160px_1fr_1fr_1fr_1fr_1fr] gap-2 mb-2">
                 <div />
                 {EVENT_DAYS.map((day) => (
                   <div key={day.date} className="text-center">
@@ -321,63 +322,140 @@ export default function VolunteersPage() {
                 ))}
               </div>
 
-              {/* Rows: one per time slot */}
-              {TIME_SLOTS.map((slot) => (
-                <div key={slot} className="grid grid-cols-[120px_1fr_1fr_1fr_1fr_1fr] gap-2 mb-3">
-                  {/* Slot label */}
-                  <div className="flex items-start pt-2">
-                    <p className="text-xs font-medium text-muted-foreground leading-tight">{slot}</p>
-                  </div>
+              {TIME_SLOTS.map((slot) => {
+                const normalise = (d: string | null) => d ? String(d).substring(0, 10) : null
 
-                  {/* One cell per day */}
-                  {EVENT_DAYS.map((day) => {
-                    const normalise = (d: string | null) => d ? String(d).substring(0, 10) : null
-                    const vols = scheduledVolunteers.filter(
-                      (v) => normalise(v.assigned_date) === day.date && v.time_slot === slot
-                    )
-                    const isEmpty = vols.length === 0
+                // Define the role rows in spreadsheet order
+                const roleRows: { label: string; bg: string; match: (v: Volunteer) => boolean }[] = [
+                  {
+                    label: "Opening Prayer",
+                    bg: "bg-blue-50/60 border-blue-100",
+                    match: (v) =>
+                      v.prayer_position === "opening" ||
+                      (!v.prayer_position && v.volunteer_type.toLowerCase().includes("prayer")),
+                  },
+                  {
+                    label: "Leading Singing",
+                    bg: "bg-purple-50/60 border-purple-100",
+                    match: (v) => v.volunteer_type.toLowerCase().includes("sing"),
+                  },
+                  {
+                    label: "Reading Scripture",
+                    bg: "bg-green-50/60 border-green-100",
+                    match: (v) =>
+                      v.volunteer_type.toLowerCase().includes("scripture") ||
+                      v.volunteer_type.toLowerCase().includes("reading"),
+                  },
+                  {
+                    label: "Presenting Lesson",
+                    bg: "bg-amber-50/60 border-amber-100",
+                    match: (v) =>
+                      v.volunteer_type.toLowerCase().includes("lesson") ||
+                      v.volunteer_type.toLowerCase().includes("teach") ||
+                      v.volunteer_type.toLowerCase().includes("present"),
+                  },
+                  {
+                    label: "Closing Prayer",
+                    bg: "bg-rose-50/60 border-rose-100",
+                    match: (v) => v.prayer_position === "closing",
+                  },
+                  {
+                    label: "Other",
+                    bg: "bg-muted/30 border-muted",
+                    match: (v) => {
+                      const t = v.volunteer_type.toLowerCase()
+                      return (
+                        !t.includes("prayer") &&
+                        !t.includes("sing") &&
+                        !t.includes("scripture") &&
+                        !t.includes("reading") &&
+                        !t.includes("lesson") &&
+                        !t.includes("teach") &&
+                        !t.includes("present")
+                      )
+                    },
+                  },
+                ]
 
-                    return (
-                      <div
-                        key={day.date}
-                        className={`rounded-lg border p-2 min-h-[72px] ${
-                          isEmpty
-                            ? "border-dashed border-muted-foreground/20 bg-muted/20"
-                            : "border-border bg-card"
-                        }`}
-                      >
-                        {isEmpty ? (
-                          <p className="text-xs text-muted-foreground/40 text-center mt-3">—</p>
-                        ) : (
-                          <div className="space-y-1.5">
-                            {vols.map((vol) => (
-                              <div key={vol.id} className="space-y-1">
-                                <p className="text-xs font-medium leading-tight truncate">{vol.volunteer_name}</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight truncate">{vol.volunteer_type}</p>
-                                <StatusBadge status={vol.schedule_status} emailSent={!!vol.schedule_email_sent_at} />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => sendScheduleEmail(vol)}
-                                  disabled={sendingId === vol.id}
-                                  className="h-6 px-1.5 text-[10px] w-full justify-start gap-1"
-                                >
-                                  {sendingId === vol.id ? (
-                                    <Loader2Icon className="size-2.5 animate-spin" />
-                                  ) : (
-                                    <MailIcon className="size-2.5" />
-                                  )}
-                                  {vol.schedule_email_sent_at ? "Resend" : "Send"}
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                // Only show rows that have at least one volunteer across all days for this slot
+                const sessionVols = scheduledVolunteers.filter((v) => v.time_slot === slot)
+                const activeRoles = roleRows.filter((row) =>
+                  sessionVols.some((v) => row.match(v))
+                )
+                const rowsToShow = activeRoles.length > 0 ? activeRoles : roleRows.slice(0, 4)
+
+                return (
+                  <div key={slot} className="mb-6">
+                    {/* Session header */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-2 py-0.5 bg-muted rounded">
+                        {slot}
+                      </span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+
+                    {rowsToShow.map((row) => (
+                      <div key={row.label} className="grid grid-cols-[160px_1fr_1fr_1fr_1fr_1fr] gap-2 mb-1.5">
+                        {/* Role label */}
+                        <div className={`flex items-center rounded-lg border px-2 py-1.5 ${row.bg}`}>
+                          <p className="text-[11px] font-semibold text-foreground/70 leading-tight">{row.label}</p>
+                        </div>
+
+                        {/* One cell per day */}
+                        {EVENT_DAYS.map((day) => {
+                          const vols = scheduledVolunteers.filter(
+                            (v) => normalise(v.assigned_date) === day.date && v.time_slot === slot && row.match(v)
+                          )
+                          const isEmpty = vols.length === 0
+
+                          return (
+                            <div
+                              key={day.date}
+                              className={`rounded-lg border p-2 min-h-[60px] ${
+                                isEmpty
+                                  ? "border-dashed border-muted-foreground/20 bg-muted/10"
+                                  : `${row.bg}`
+                              }`}
+                            >
+                              {isEmpty ? (
+                                <p className="text-xs text-muted-foreground/30 text-center mt-3">—</p>
+                              ) : (
+                                <div className="space-y-1.5">
+                                  {vols.map((vol) => (
+                                    <div key={vol.id} className="space-y-1">
+                                      <p className="text-xs font-medium leading-tight truncate">{vol.volunteer_name}</p>
+                                      {vol.claimed_lesson_title && (
+                                        <p className="text-[10px] text-amber-700 leading-tight truncate italic">
+                                          {vol.claimed_lesson_title}
+                                        </p>
+                                      )}
+                                      <StatusBadge status={vol.schedule_status} emailSent={!!vol.schedule_email_sent_at} />
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => sendScheduleEmail(vol)}
+                                        disabled={sendingId === vol.id}
+                                        className="h-6 px-1.5 text-[10px] w-full justify-start gap-1"
+                                      >
+                                        {sendingId === vol.id ? (
+                                          <Loader2Icon className="size-2.5 animate-spin" />
+                                        ) : (
+                                          <MailIcon className="size-2.5" />
+                                        )}
+                                        {vol.schedule_email_sent_at ? "Resend" : "Send"}
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
-                    )
-                  })}
-                </div>
-              ))}
+                    ))}
+                  </div>
+                )
+              })}
             </div>
           </div>
 

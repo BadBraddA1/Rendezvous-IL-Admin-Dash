@@ -5,16 +5,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params
     const body = await request.json()
-    const { assigned_date, time_slot, notes } = body
+    const { assigned_date, time_slot, notes, prayer_position } = body
 
-    const sql = await getDb()
+    const sql = getDb()
+
+    // Ensure prayer_position column exists (self-bootstrapping migration)
+    await sql`
+      ALTER TABLE volunteer_signups
+      ADD COLUMN IF NOT EXISTS prayer_position TEXT CHECK (prayer_position IN ('opening', 'closing'))
+    `
 
     await sql`
       UPDATE volunteer_signups
-      SET 
+      SET
         assigned_date = ${assigned_date || null},
         time_slot = ${time_slot || null},
-        notes = ${notes || null}
+        notes = ${notes || null},
+        prayer_position = ${prayer_position || null}
       WHERE id = ${Number(id)}
     `
 
