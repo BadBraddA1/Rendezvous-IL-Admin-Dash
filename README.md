@@ -1,30 +1,27 @@
-# Lesson bid email
+# Rendezvous IL Admin Dashboard
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+*Managed by [Braddcorp.com](https://braddcorp.com)*
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/adins-projects-d2644952/v0-ren-dash)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/SLl2djUAL6Q)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/adins-projects-d2644952/rendezvous-il-admin)
+[![Made by Braddcorp](https://img.shields.io/badge/Made%20by-Braddcorp.com-black?style=for-the-badge)](https://braddcorp.com)
 
 ## Overview
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+This repository contains the Rendezvous IL Admin Dashboard, a modern administrative interface for managing Rendezvous IL operations. The application is continuously deployed and maintained by Braddcorp.com.
 
 ## Deployment
 
 Your project is live at:
 
-**[https://vercel.com/adins-projects-d2644952/v0-ren-dash](https://vercel.com/adins-projects-d2644952/v0-ren-dash)**
+**[https://vercel.com/adins-projects-d2644952/rendezvous-il-admin](https://vercel.com/adins-projects-d2644952/rendezvous-il-admin)**
 
-## Build your app
+## About Braddcorp
 
-Continue building your app on:
-
-**[https://v0.app/chat/SLl2djUAL6Q](https://v0.app/chat/SLl2djUAL6Q)**
+Visit us at **[https://braddcorp.com](https://braddcorp.com)** for more information about our services and projects.
 
 ## How It Works
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+1. Code is developed and maintained in this repository
+2. Changes are automatically deployed via Vercel
+3. The latest version is always available at the deployment URL
+4. Continuous integration ensures code quality and reliability
