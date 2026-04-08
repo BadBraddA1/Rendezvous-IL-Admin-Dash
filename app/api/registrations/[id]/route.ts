@@ -72,6 +72,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       home_congregation,
       payment_status,
       lodging_type,
+      lodging_total,
       emergency_contact_name,
       emergency_contact_phone,
       emergency_contact_relationship,
@@ -83,9 +84,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       SET family_last_name = ${family_last_name}, email = ${email}, husband_phone = ${husband_phone}, 
           wife_phone = ${wife_phone}, address = ${address}, city = ${city}, state = ${state}, zip = ${zip}, 
           home_congregation = ${home_congregation}, payment_status = ${payment_status}, lodging_type = ${lodging_type}, 
-          emergency_contact_name = ${emergency_contact_name}, emergency_contact_phone = ${emergency_contact_phone}, 
-          emergency_contact_relationship = ${emergency_contact_relationship}, payment_notes = ${payment_notes}, 
-          updated_at = NOW()
+          lodging_total = ${lodging_total}, emergency_contact_name = ${emergency_contact_name}, 
+          emergency_contact_phone = ${emergency_contact_phone}, emergency_contact_relationship = ${emergency_contact_relationship}, 
+          payment_notes = ${payment_notes}, updated_at = NOW()
       WHERE id = ${id}
       RETURNING *
     `

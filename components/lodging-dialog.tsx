@@ -54,7 +54,7 @@ export function LodgingDialog({
 
     try {
       const response = await fetch(`/api/registrations/${registrationId}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lodging_type: formData.lodging_type,
