@@ -59,6 +59,7 @@ interface Registration {
   times_attended: number | null
   lodging_type: string | null
   lodging_total: number | null
+  tshirt_total: number | null
   scholarship_donation: number | null
   scholarship_requested: boolean | null
   emergency_contact_name: string | null
@@ -595,15 +596,16 @@ export function AdminDashboard() {
                     filteredRegistrations.map((registration) => {
                       const regFee = Number(registration.registration_fee) || 0
                       const lodgingTotal = Number(registration.lodging_total) || 0
+                      const tshirtTotal = Number(registration.tshirt_total) || 0
                       const donation = Number(registration.scholarship_donation) || 0
-                      const expectedTotal = regFee + lodgingTotal + donation
+                      const expectedTotal = regFee + lodgingTotal + tshirtTotal + donation
 
                       // Calculate amount owed based on payment status
                       const amountOwed =
                         registration.payment_status === "paid"
                           ? 0
                           : registration.payment_status === "partial"
-                            ? expectedTotal - regFee // If partial, assume reg fee paid
+                            ? lodgingTotal + tshirtTotal + donation // If partial, assume reg fee paid
                             : expectedTotal // If pending, owe everything
 
                       return (
@@ -640,6 +642,7 @@ export function AdminDashboard() {
                             <div className="text-xs text-muted-foreground space-y-0.5">
                               <div>Reg: ${regFee.toFixed(2)}</div>
                               {lodgingTotal > 0 && <div>Lodging: ${lodgingTotal.toFixed(2)}</div>}
+                              {tshirtTotal > 0 && <div>T-Shirts: ${tshirtTotal.toFixed(2)}</div>}
                               {donation > 0 && <div>Donation: ${donation.toFixed(2)}</div>}
                             </div>
                           </TableCell>
