@@ -1,14 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-// Must match the token in middleware.ts
-const AUTH_TOKEN = "rendezvous2026_authenticated"
+// Auth token from environment variable - must match middleware.ts
+const AUTH_TOKEN = process.env.AUTH_TOKEN || "default_auth_token_change_me"
 
 export async function POST(request: NextRequest) {
   const { password } = await request.json()
 
   const adminPassword = process.env.ADMIN_PASSWORD
-  if (!adminPassword) {
-    return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 })
+  const authToken = process.env.AUTH_TOKEN
+  
+  if (!adminPassword || !authToken) {
+    return NextResponse.json({ error: "Server misconfiguration: Missing AUTH_TOKEN or ADMIN_PASSWORD" }, { status: 500 })
   }
 
   if (password !== adminPassword) {
