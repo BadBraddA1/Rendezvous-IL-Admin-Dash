@@ -1,6 +1,7 @@
 {
-  "name": "my-v0-project",
-  "version": "0.1.0",
+  "name": "rendezvous-il-admin-dash",
+  "version": "1.0.0",
+  "description": "Admin dashboard for Rendezvous IL event management",
   "private": true,
   "scripts": {
     "build": "next build",

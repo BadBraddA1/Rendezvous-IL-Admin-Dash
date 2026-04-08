@@ -7,8 +7,8 @@ const PUBLIC_ADMIN_PATHS = [
   "/admin/checked-in",
 ]
 
-// Simple auth token - login route sets this exact value when password is correct
-const AUTH_TOKEN = "rendezvous2026_authenticated"
+// Auth token from environment variable - login route sets this value when password is correct
+const AUTH_TOKEN = process.env.AUTH_TOKEN || "default_auth_token_change_me"
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
