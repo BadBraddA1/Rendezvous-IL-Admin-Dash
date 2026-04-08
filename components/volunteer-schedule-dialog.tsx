@@ -14,6 +14,7 @@ interface Volunteer {
   volunteer_type: string
   assigned_date?: string | null
   time_slot?: string | null
+  prayer_type?: string | null
   notes?: string | null
 }
 
@@ -47,7 +48,8 @@ export function VolunteerScheduleDialog({
   }
 
   const [assignedDate, setAssignedDate] = useState(volunteer.assigned_date || "unassigned")
-  const [timeSlot, setTimeSlot] = useState(volunteer.time_slot || "unassigned")
+  const [baseTimeSlot, setBaseTimeSlot] = useState(volunteer.time_slot || "unassigned")
+  const [prayerPosition, setPrayerPosition] = useState(volunteer.prayer_type || "Opening Prayer")
   const [notes, setNotes] = useState(volunteer.notes || "")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
@@ -55,9 +57,10 @@ export function VolunteerScheduleDialog({
   // Sync state when volunteer changes (controlled mode re-opens for a different person)
   useEffect(() => {
     setAssignedDate(volunteer.assigned_date || "unassigned")
-    setTimeSlot(volunteer.time_slot || "unassigned")
+    setBaseTimeSlot(volunteer.time_slot || "unassigned")
+    setPrayerPosition(volunteer.prayer_type || "Opening Prayer")
     setNotes(volunteer.notes || "")
-  }, [volunteer.id, volunteer.assigned_date, volunteer.time_slot, volunteer.notes])
+  }, [volunteer.id, volunteer.assigned_date, volunteer.time_slot, volunteer.prayer_type, volunteer.notes])
 
   const eventDates = [
     { value: "2026-05-04", label: "Monday, May 4" },
@@ -75,7 +78,8 @@ export function VolunteerScheduleDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           assigned_date: assignedDate === "unassigned" ? null : assignedDate,
-          time_slot: timeSlot === "unassigned" ? null : timeSlot,
+          time_slot: baseTimeSlot === "unassigned" ? null : baseTimeSlot,
+          prayer_type: volunteer.volunteer_type === "Leading prayer" && baseTimeSlot !== "unassigned" ? prayerPosition : null,
           notes: notes || null,
         }),
       })
@@ -120,7 +124,7 @@ export function VolunteerScheduleDialog({
 
         <div className="space-y-2">
           <Label htmlFor="time-slot">Time Slot</Label>
-          <Select value={timeSlot} onValueChange={setTimeSlot}>
+          <Select value={baseTimeSlot} onValueChange={setBaseTimeSlot}>
             <SelectTrigger id="time-slot"><SelectValue placeholder="Select time slot" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">Unassigned</SelectItem>
@@ -129,6 +133,19 @@ export function VolunteerScheduleDialog({
             </SelectContent>
           </Select>
         </div>
+
+        {volunteer.volunteer_type === "Leading prayer" && baseTimeSlot !== "unassigned" && (
+          <div className="space-y-2">
+            <Label htmlFor="prayer-position">Prayer Position</Label>
+            <Select value={prayerPosition} onValueChange={setPrayerPosition}>
+              <SelectTrigger id="prayer-position"><SelectValue placeholder="Select prayer position" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Opening Prayer">Opening Prayer</SelectItem>
+                <SelectItem value="Closing Prayer">Closing Prayer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="notes">Notes (Optional)</Label>

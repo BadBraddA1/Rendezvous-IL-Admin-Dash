@@ -5,7 +5,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params
     const body = await request.json()
-    const { assigned_date, time_slot, notes } = body
+    const { assigned_date, time_slot, prayer_type, notes } = body
 
     const sql = await getDb()
 
@@ -14,6 +14,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       SET 
         assigned_date = ${assigned_date || null},
         time_slot = ${time_slot || null},
+        prayer_type = ${prayer_type || null},
         notes = ${notes || null}
       WHERE id = ${Number(id)}
     `
