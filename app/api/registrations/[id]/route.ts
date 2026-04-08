@@ -60,36 +60,94 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id } = await params
     const body = await request.json()
 
-    const {
-      family_last_name,
-      email,
-      husband_phone,
-      wife_phone,
-      address,
-      city,
-      state,
-      zip,
-      home_congregation,
-      payment_status,
-      lodging_type,
-      lodging_total,
-      emergency_contact_name,
-      emergency_contact_phone,
-      emergency_contact_relationship,
-      payment_notes,
-    } = body
+    // Build dynamic update query - only update fields that are provided
+    const updates: string[] = []
+    const values: any[] = []
 
-    const result = await sql`
-      UPDATE registrations
-      SET family_last_name = ${family_last_name}, email = ${email}, husband_phone = ${husband_phone}, 
-          wife_phone = ${wife_phone}, address = ${address}, city = ${city}, state = ${state}, zip = ${zip}, 
-          home_congregation = ${home_congregation}, payment_status = ${payment_status}, lodging_type = ${lodging_type}, 
-          lodging_total = ${lodging_total}, emergency_contact_name = ${emergency_contact_name}, 
-          emergency_contact_phone = ${emergency_contact_phone}, emergency_contact_relationship = ${emergency_contact_relationship}, 
-          payment_notes = ${payment_notes}, updated_at = NOW()
-      WHERE id = ${id}
-      RETURNING *
-    `
+    const allowedFields = [
+      "family_last_name",
+      "email",
+      "husband_phone",
+      "wife_phone",
+      "address",
+      "city",
+      "state",
+      "zip",
+      "home_congregation",
+      "payment_status",
+      "lodging_type",
+      "lodging_total",
+      "emergency_contact_name",
+      "emergency_contact_phone",
+      "emergency_contact_relationship",
+      "payment_notes",
+    ]
+
+    for (const field of allowedFields) {
+      if (field in body) {
+        updates.push(field)
+        values.push(body[field])
+      }
+    }
+
+    if (updates.length === 0) {
+      return Response.json({ error: "No fields to update" }, { status: 400 })
+    }
+
+    // Build and execute the query using tagged template
+    // We need to do individual field updates since neon uses tagged templates
+    let result
+    
+    // Handle common partial update cases
+    if (updates.length === 2 && updates.includes("lodging_type") && updates.includes("lodging_total")) {
+      // Lodging-only update
+      result = await sql`
+        UPDATE registrations
+        SET lodging_type = ${body.lodging_type}, lodging_total = ${body.lodging_total}, updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING *
+      `
+    } else if (updates.length === 1 && updates.includes("payment_status")) {
+      // Payment status only
+      result = await sql`
+        UPDATE registrations
+        SET payment_status = ${body.payment_status}, updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING *
+      `
+    } else if (updates.length === 1 && updates.includes("payment_notes")) {
+      // Payment notes only
+      result = await sql`
+        UPDATE registrations
+        SET payment_notes = ${body.payment_notes}, updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING *
+      `
+    } else {
+      // Full update - all fields provided
+      result = await sql`
+        UPDATE registrations
+        SET family_last_name = ${body.family_last_name ?? null}, 
+            email = ${body.email ?? null}, 
+            husband_phone = ${body.husband_phone ?? null}, 
+            wife_phone = ${body.wife_phone ?? null}, 
+            address = ${body.address ?? null}, 
+            city = ${body.city ?? null}, 
+            state = ${body.state ?? null}, 
+            zip = ${body.zip ?? null}, 
+            home_congregation = ${body.home_congregation ?? null}, 
+            payment_status = ${body.payment_status ?? null}, 
+            lodging_type = ${body.lodging_type ?? null}, 
+            lodging_total = ${body.lodging_total ?? null}, 
+            emergency_contact_name = ${body.emergency_contact_name ?? null}, 
+            emergency_contact_phone = ${body.emergency_contact_phone ?? null}, 
+            emergency_contact_relationship = ${body.emergency_contact_relationship ?? null}, 
+            payment_notes = ${body.payment_notes ?? null}, 
+            updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING *
+      `
+    }
 
     if (result.length === 0) {
       return Response.json({ error: "Registration not found" }, { status: 404 })
