@@ -73,6 +73,29 @@ interface Registration {
   family_member_count?: number
   tshirt_order_count?: number
   volunteer_count?: number
+  first_person_name?: string | null
+}
+
+// Abbreviate lodging type for compact display
+function abbreviateLodging(lodging: string | null): string {
+  if (!lodging) return "—"
+  const lower = lodging.toLowerCase()
+  if (lower === "tent") return "Tent"
+  if (lower === "rv") return "RV"
+  if (lower === "commuting") return "Comm"
+  // Handle motel patterns like "motel-1queen-2bunk" -> "M-1Q-2B"
+  if (lower.startsWith("motel-")) {
+    const parts = lower.replace("motel-", "").split("-")
+    const abbrev = parts.map(p => {
+      const match = p.match(/^(\d*)(.+)$/)
+      if (!match) return p.charAt(0).toUpperCase()
+      const [, num, type] = match
+      const typeAbbrev = type === "queen" ? "Q" : type === "bunk" ? "B" : type === "king" ? "K" : type.charAt(0).toUpperCase()
+      return num ? `${num}${typeAbbrev}` : typeAbbrev
+    }).join("-")
+    return `M-${abbrev}`
+  }
+  return lodging
 }
 
 interface Stats {
@@ -575,10 +598,10 @@ export function AdminDashboard() {
                         </span>
                       </button>
                     </TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Lodging</TableHead>
-                    <TableHead>Family Members</TableHead>
+                    <TableHead>FM</TableHead>
                     <TableHead>Expected Total</TableHead>
                     <TableHead>Amount Owed</TableHead>
                     <TableHead>Payment Status</TableHead>
@@ -621,11 +644,11 @@ export function AdminDashboard() {
                                 : ""}
                             </div>
                           </TableCell>
-                          <TableCell>{registration.email}</TableCell>
-                          <TableCell>{registration.husband_phone || registration.wife_phone || "N/A"}</TableCell>
+                          <TableCell>{registration.first_person_name || "—"}</TableCell>
+                          <TableCell className="text-sm">{registration.husband_phone || registration.wife_phone || "—"}</TableCell>
                           <TableCell>
                             <div>
-                              <Badge variant="outline">{registration.lodging_type || "Not specified"}</Badge>
+                              <Badge variant="outline" className="text-xs">{abbreviateLodging(registration.lodging_type)}</Badge>
                               {lodgingTotal > 0 && (
                                 <div className="text-xs text-muted-foreground mt-1">${lodgingTotal.toFixed(2)}</div>
                               )}
