@@ -25,7 +25,9 @@ import {
   BookOpenIcon,
   GlobeIcon,
   EyeOffIcon,
+  GripVerticalIcon,
 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
@@ -75,6 +77,8 @@ export default function VolunteersPage() {
   const [selectedVolunteer, setSelectedVolunteer] = useState<Volunteer | null>(null)
   const [schedulePublished, setSchedulePublished] = useState(false)
   const [togglingPublish, setTogglingPublish] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<string>("all")
+  const [draggingVolunteer, setDraggingVolunteer] = useState<Volunteer | null>(null)
   const { toast } = useToast()
 
   const fetchVolunteers = useCallback(async () => {
@@ -283,6 +287,10 @@ export default function VolunteersPage() {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="dragdrop" className="gap-2">
+            <GripVerticalIcon className="size-4" />
+            Drag & Drop
+          </TabsTrigger>
         </TabsList>
 
         {/* FINAL SCHEDULE TAB */}
@@ -332,6 +340,23 @@ export default function VolunteersPage() {
 
 {/* One cell per day */}
                                   {EVENT_DAYS.map((day) => {
+                                    // Skip Morning Devotion on Monday May 4 (event starts afternoon)
+                                    // Skip Evening Devotion on Friday May 8 (event ends that day)
+                                    const isInvalidSlot = 
+                                      (slot === "Morning Devotion" && day.date === "2026-05-04") ||
+                                      (slot === "Evening Devotion" && day.date === "2026-05-08")
+                                    
+                                    if (isInvalidSlot) {
+                                      return (
+                                        <div
+                                          key={day.date}
+                                          className="rounded-lg border border-dashed border-muted-foreground/10 bg-muted/10 p-2 min-h-[72px] flex items-center justify-center"
+                                        >
+                                          <p className="text-[10px] text-muted-foreground/30 text-center">N/A</p>
+                                        </div>
+                                      )
+                                    }
+
                                     const normalise = (d: string | null) => d ? String(d).substring(0, 10) : null
                                     const vols = scheduledVolunteers
                                       .filter((v) => normalise(v.assigned_date) === day.date && v.time_slot === slot)
@@ -360,7 +385,7 @@ export default function VolunteersPage() {
                                             {vols.map((vol) => (
                                               <div key={vol.id} className="space-y-1">
                                                 <p className="text-xs font-medium leading-tight truncate">
-                                                  {vol.volunteer_name} {vol.family_last_name ? `(${vol.family_last_name})` : ""}
+                                                  {vol.volunteer_name} {vol.family_last_name || ""}
                                                 </p>
                                                 <p className="text-[10px] text-muted-foreground leading-tight truncate">
                                                   {vol.prayer_type === "A" || vol.prayer_type === "B" ? `[${vol.prayer_type}] ` : ""}
@@ -683,6 +708,185 @@ export default function VolunteersPage() {
               <p className="font-medium">No volunteers yet</p>
             </div>
           )}
+        </TabsContent>
+
+        {/* DRAG & DROP TAB */}
+        <TabsContent value="dragdrop" className="space-y-4 mt-6">
+          {/* Role selector */}
+          <div className="flex items-center gap-4 p-4 bg-muted/40 rounded-xl border">
+            <label className="text-sm font-medium">Filter by Role:</label>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                {Array.from(new Set(volunteers.map(v => v.volunteer_type))).sort().map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex-1" />
+            <p className="text-xs text-muted-foreground">Drag volunteers from the left panel onto the schedule grid</p>
+          </div>
+
+          <div className="grid grid-cols-[280px_1fr] gap-4">
+            {/* Left panel: unscheduled volunteers */}
+            <div className="border rounded-xl overflow-hidden bg-card">
+              <div className="bg-muted/50 px-4 py-3 border-b">
+                <h3 className="font-semibold text-sm">Unassigned Volunteers</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {unscheduledVolunteers.filter(v => selectedRole === "all" || v.volunteer_type === selectedRole).length} remaining
+                </p>
+              </div>
+              <div className="p-2 space-y-1.5 max-h-[500px] overflow-y-auto">
+                {unscheduledVolunteers
+                  .filter(v => selectedRole === "all" || v.volunteer_type === selectedRole)
+                  .sort((a, b) => a.volunteer_name.localeCompare(b.volunteer_name))
+                  .map((vol) => (
+                    <div
+                      key={vol.id}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingVolunteer(vol)
+                        e.dataTransfer.effectAllowed = "move"
+                      }}
+                      onDragEnd={() => setDraggingVolunteer(null)}
+                      className="flex items-center gap-2 p-2.5 bg-background border rounded-lg cursor-grab active:cursor-grabbing hover:border-amber-300 hover:bg-amber-50/50 transition-colors"
+                    >
+                      <GripVerticalIcon className="size-4 text-muted-foreground/50 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{vol.volunteer_name} {vol.family_last_name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{vol.volunteer_type}</p>
+                      </div>
+                    </div>
+                  ))}
+                {unscheduledVolunteers.filter(v => selectedRole === "all" || v.volunteer_type === selectedRole).length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircleIcon className="size-8 mx-auto mb-2 text-green-500 opacity-60" />
+                    <p className="text-xs font-medium">All assigned!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right panel: schedule grid */}
+            <div className="overflow-x-auto">
+              <div className="min-w-[500px]">
+                {/* Column headers */}
+                <div className="grid grid-cols-[100px_1fr_1fr_1fr_1fr_1fr] gap-1.5 mb-2">
+                  <div />
+                  {EVENT_DAYS.map((day) => (
+                    <div key={day.date} className="text-center">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {new Date(day.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short" })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        May {new Date(day.date + "T12:00:00").getDate()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Grid rows */}
+                {TIME_SLOTS.map((slot) => (
+                  <div key={slot} className="grid grid-cols-[100px_1fr_1fr_1fr_1fr_1fr] gap-1.5 mb-2">
+                    <div className="flex items-center">
+                      <p className="text-[11px] font-medium text-muted-foreground leading-tight">{slot}</p>
+                    </div>
+                    {EVENT_DAYS.map((day) => {
+                      const isInvalidSlot = 
+                        (slot === "Morning Devotion" && day.date === "2026-05-04") ||
+                        (slot === "Evening Devotion" && day.date === "2026-05-08")
+
+                      if (isInvalidSlot) {
+                        return (
+                          <div
+                            key={day.date}
+                            className="rounded-lg border border-dashed border-muted-foreground/10 bg-muted/10 p-1.5 min-h-[60px] flex items-center justify-center"
+                          >
+                            <p className="text-[10px] text-muted-foreground/30">N/A</p>
+                          </div>
+                        )
+                      }
+
+                      const normalise = (d: string | null) => d ? String(d).substring(0, 10) : null
+                      const cellVolunteers = scheduledVolunteers.filter(
+                        (v) => normalise(v.assigned_date) === day.date && v.time_slot === slot
+                      )
+
+                      return (
+                        <div
+                          key={day.date}
+                          onDragOver={(e) => {
+                            e.preventDefault()
+                            e.currentTarget.classList.add("ring-2", "ring-amber-400", "bg-amber-50")
+                          }}
+                          onDragLeave={(e) => {
+                            e.currentTarget.classList.remove("ring-2", "ring-amber-400", "bg-amber-50")
+                          }}
+                          onDrop={async (e) => {
+                            e.preventDefault()
+                            e.currentTarget.classList.remove("ring-2", "ring-amber-400", "bg-amber-50")
+                            if (!draggingVolunteer) return
+                            
+                            // Assign the volunteer to this slot
+                            try {
+                              const res = await fetch(`/api/volunteers/${draggingVolunteer.id}/schedule`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  assigned_date: day.date,
+                                  time_slot: slot,
+                                }),
+                              })
+                              if (res.ok) {
+                                toast({ title: "Assigned", description: `${draggingVolunteer.volunteer_name} assigned to ${slot} on ${day.label}` })
+                                fetchVolunteers()
+                              } else {
+                                toast({ title: "Error", description: "Failed to assign volunteer", variant: "destructive" })
+                              }
+                            } catch {
+                              toast({ title: "Error", description: "Failed to assign volunteer", variant: "destructive" })
+                            }
+                            setDraggingVolunteer(null)
+                          }}
+                          className={`rounded-lg border p-1.5 min-h-[60px] transition-colors ${
+                            cellVolunteers.length === 0
+                              ? "border-dashed border-muted-foreground/20 bg-muted/20"
+                              : "border-border bg-card"
+                          }`}
+                        >
+                          {cellVolunteers.length === 0 ? (
+                            <p className="text-[10px] text-muted-foreground/40 text-center mt-4">Drop here</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {cellVolunteers
+                                .sort((a, b) => {
+                                  const orderA = a.prayer_type === "A" ? 0 : a.prayer_type === "B" ? 1 : 2
+                                  const orderB = b.prayer_type === "A" ? 0 : b.prayer_type === "B" ? 1 : 2
+                                  if (orderA !== orderB) return orderA - orderB
+                                  return a.volunteer_name.localeCompare(b.volunteer_name)
+                                })
+                                .map((vol) => (
+                                  <div key={vol.id} className="text-[10px] leading-tight p-1 bg-muted/50 rounded">
+                                    <p className="font-medium truncate">{vol.volunteer_name} {vol.family_last_name}</p>
+                                    <p className="text-muted-foreground truncate">
+                                      {vol.prayer_type === "A" || vol.prayer_type === "B" ? `[${vol.prayer_type}] ` : ""}
+                                      {vol.volunteer_type}
+                                    </p>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 

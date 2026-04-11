@@ -116,7 +116,16 @@ export function VolunteerScheduleDialog({
 
         <div className="space-y-2">
           <Label htmlFor="date">Assigned Date</Label>
-          <Select value={assignedDate} onValueChange={setAssignedDate}>
+          <Select value={assignedDate} onValueChange={(val) => {
+            setAssignedDate(val)
+            // Auto-clear time slot if it becomes invalid
+            if (val === "2026-05-04" && baseTimeSlot === "Morning Devotion") {
+              setBaseTimeSlot("unassigned")
+            }
+            if (val === "2026-05-08" && baseTimeSlot === "Evening Devotion") {
+              setBaseTimeSlot("unassigned")
+            }
+          }}>
             <SelectTrigger id="date"><SelectValue placeholder="Select a date" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">Unassigned</SelectItem>
@@ -133,8 +142,20 @@ export function VolunteerScheduleDialog({
             <SelectTrigger id="time-slot"><SelectValue placeholder="Select time slot" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="unassigned">Unassigned</SelectItem>
-              <SelectItem value="Morning Devotion">Morning Devotion</SelectItem>
-              <SelectItem value="Evening Devotion">Evening Devotion</SelectItem>
+              {/* Morning Devotion not available on May 4 (event starts afternoon) */}
+              <SelectItem 
+                value="Morning Devotion" 
+                disabled={assignedDate === "2026-05-04"}
+              >
+                Morning Devotion {assignedDate === "2026-05-04" ? "(N/A Mon)" : ""}
+              </SelectItem>
+              {/* Evening Devotion not available on May 8 (event ends) */}
+              <SelectItem 
+                value="Evening Devotion"
+                disabled={assignedDate === "2026-05-08"}
+              >
+                Evening Devotion {assignedDate === "2026-05-08" ? "(N/A Fri)" : ""}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
