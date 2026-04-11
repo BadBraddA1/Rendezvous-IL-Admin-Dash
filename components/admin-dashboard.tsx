@@ -455,6 +455,32 @@ export function AdminDashboard() {
             </Card>
           </Link>
 
+          {/* Arrival Notes shortcut */}
+          <Link href="/admin/arrival-notes">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-orange-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Arrival Notes</CardTitle>
+                <ClockIcon className="size-4 text-orange-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Late arrivals &amp; early departures</div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Adventure Activities shortcut */}
+          <Link href="/admin/adventure">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-blue-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Adventure Activities</CardTitle>
+                <MountainSnowIcon className="size-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Climbing tower &amp; activities</div>
+              </CardContent>
+            </Card>
+          </Link>
+
           {/* Key Checkout card */}
           <Link href="/admin/checkout">
             <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
