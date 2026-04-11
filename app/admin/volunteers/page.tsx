@@ -330,33 +330,42 @@ export default function VolunteersPage() {
                     <p className="text-xs font-medium text-muted-foreground leading-tight">{slot}</p>
                   </div>
 
-                  {/* One cell per day */}
-                  {EVENT_DAYS.map((day) => {
-                    const normalise = (d: string | null) => d ? String(d).substring(0, 10) : null
-                    const vols = scheduledVolunteers.filter(
-                      (v) => normalise(v.assigned_date) === day.date && v.time_slot === slot
-                    )
-                    const isEmpty = vols.length === 0
+{/* One cell per day */}
+                                  {EVENT_DAYS.map((day) => {
+                                    const normalise = (d: string | null) => d ? String(d).substring(0, 10) : null
+                                    const vols = scheduledVolunteers
+                                      .filter((v) => normalise(v.assigned_date) === day.date && v.time_slot === slot)
+                                      .sort((a, b) => {
+                                        // Sort by prayer_type: A before B, then alphabetically
+                                        const orderA = a.prayer_type === "A" ? 0 : a.prayer_type === "B" ? 1 : 2
+                                        const orderB = b.prayer_type === "A" ? 0 : b.prayer_type === "B" ? 1 : 2
+                                        if (orderA !== orderB) return orderA - orderB
+                                        return a.volunteer_name.localeCompare(b.volunteer_name)
+                                      })
+                                    const isEmpty = vols.length === 0
 
-                    return (
-                      <div
-                        key={day.date}
-                        className={`rounded-lg border p-2 min-h-[72px] ${
-                          isEmpty
-                            ? "border-dashed border-muted-foreground/20 bg-muted/20"
-                            : "border-border bg-card"
-                        }`}
-                      >
-                        {isEmpty ? (
-                          <p className="text-xs text-muted-foreground/40 text-center mt-3">—</p>
-                        ) : (
-                          <div className="space-y-1.5">
-                            {vols.map((vol) => (
-                              <div key={vol.id} className="space-y-1">
-                                <p className="text-xs font-medium leading-tight truncate">{vol.volunteer_name}</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight truncate">
-                                  {vol.volunteer_type}{vol.prayer_type ? ` - ${vol.prayer_type}` : ""}
-                                </p>
+                                    return (
+                                      <div
+                                        key={day.date}
+                                        className={`rounded-lg border p-2 min-h-[72px] ${
+                                          isEmpty
+                                            ? "border-dashed border-muted-foreground/20 bg-muted/20"
+                                            : "border-border bg-card"
+                                        }`}
+                                      >
+                                        {isEmpty ? (
+                                          <p className="text-xs text-muted-foreground/40 text-center mt-3">—</p>
+                                        ) : (
+                                          <div className="space-y-1.5">
+                                            {vols.map((vol) => (
+                                              <div key={vol.id} className="space-y-1">
+                                                <p className="text-xs font-medium leading-tight truncate">
+                                                  {vol.volunteer_name} {vol.family_last_name ? `(${vol.family_last_name})` : ""}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground leading-tight truncate">
+                                                  {vol.prayer_type === "A" || vol.prayer_type === "B" ? `[${vol.prayer_type}] ` : ""}
+                                                  {vol.volunteer_type}{vol.prayer_type && vol.prayer_type !== "A" && vol.prayer_type !== "B" ? ` - ${vol.prayer_type}` : ""}
+                                                </p>
                                 <StatusBadge status={vol.schedule_status} emailSent={!!vol.schedule_email_sent_at} />
                                 <Button
                                   size="sm"
