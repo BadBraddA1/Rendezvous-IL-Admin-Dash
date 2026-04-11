@@ -50,6 +50,7 @@ export function VolunteerScheduleDialog({
   const [assignedDate, setAssignedDate] = useState(volunteer.assigned_date || "unassigned")
   const [baseTimeSlot, setBaseTimeSlot] = useState(volunteer.time_slot || "unassigned")
   const [prayerPosition, setPrayerPosition] = useState(volunteer.prayer_type || "Opening Prayer")
+  const [presentationOrder, setPresentationOrder] = useState(volunteer.prayer_type || "A")
   const [notes, setNotes] = useState(volunteer.notes || "")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
@@ -59,6 +60,7 @@ export function VolunteerScheduleDialog({
     setAssignedDate(volunteer.assigned_date || "unassigned")
     setBaseTimeSlot(volunteer.time_slot || "unassigned")
     setPrayerPosition(volunteer.prayer_type || "Opening Prayer")
+    setPresentationOrder(volunteer.prayer_type || "A")
     setNotes(volunteer.notes || "")
   }, [volunteer.id, volunteer.assigned_date, volunteer.time_slot, volunteer.prayer_type, volunteer.notes])
 
@@ -79,7 +81,10 @@ export function VolunteerScheduleDialog({
         body: JSON.stringify({
           assigned_date: assignedDate === "unassigned" ? null : assignedDate,
           time_slot: baseTimeSlot === "unassigned" ? null : baseTimeSlot,
-          prayer_type: volunteer.volunteer_type === "Leading prayer" && baseTimeSlot !== "unassigned" ? prayerPosition : null,
+          prayer_type: 
+            volunteer.volunteer_type === "Leading prayer" && baseTimeSlot !== "unassigned" ? prayerPosition :
+            (volunteer.volunteer_type === "Presenting a lesson" || volunteer.volunteer_type === "Leading singing") && baseTimeSlot !== "unassigned" ? presentationOrder :
+            null,
           notes: notes || null,
         }),
       })
@@ -142,6 +147,19 @@ export function VolunteerScheduleDialog({
               <SelectContent>
                 <SelectItem value="Opening Prayer">Opening Prayer</SelectItem>
                 <SelectItem value="Closing Prayer">Closing Prayer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {(volunteer.volunteer_type === "Presenting a lesson" || volunteer.volunteer_type === "Leading singing") && baseTimeSlot !== "unassigned" && (
+          <div className="space-y-2">
+            <Label htmlFor="presentation-order">Order</Label>
+            <Select value={presentationOrder} onValueChange={setPresentationOrder}>
+              <SelectTrigger id="presentation-order"><SelectValue placeholder="Select order" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="A">A - First</SelectItem>
+                <SelectItem value="B">B - Second</SelectItem>
               </SelectContent>
             </Select>
           </div>
