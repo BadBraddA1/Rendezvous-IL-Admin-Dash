@@ -33,6 +33,7 @@ import {
   KeyIcon,
   BookOpenIcon,
   LogOutIcon,
+  MountainSnowIcon,
 } from "lucide-react"
 import { RegistrationDialog } from "./registration-dialog"
 import { RegistrationDetailsDialog } from "./registration-details-dialog"
