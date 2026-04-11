@@ -250,7 +250,7 @@ export function AdminDashboard() {
     )
   }
 
-  const registrationClosesDate = new Date("2026-04-27T23:59:59-05:00")
+  const registrationClosesDate = new Date("2026-04-15T11:59:00-05:00")
   const eventStartsDate = new Date("2026-05-04T13:00:00-05:00")
 
   const filteredRegistrations = registrations
