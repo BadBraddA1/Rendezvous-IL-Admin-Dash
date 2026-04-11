@@ -83,7 +83,7 @@ export function VolunteerScheduleDialog({
           time_slot: baseTimeSlot === "unassigned" ? null : baseTimeSlot,
           prayer_type: 
             volunteer.volunteer_type === "Leading prayer" && baseTimeSlot !== "unassigned" ? prayerPosition :
-            (volunteer.volunteer_type === "Presenting a lesson" || volunteer.volunteer_type === "Song leading") && baseTimeSlot !== "unassigned" ? presentationOrder :
+            (volunteer.volunteer_type === "Presenting a lesson" || volunteer.volunteer_type === "Leading singing") && baseTimeSlot !== "unassigned" ? presentationOrder :
             null,
           notes: notes || null,
         }),
@@ -152,7 +152,7 @@ export function VolunteerScheduleDialog({
           </div>
         )}
 
-        {(volunteer.volunteer_type === "Presenting a lesson" || volunteer.volunteer_type === "Song leading") && baseTimeSlot !== "unassigned" && (
+        {(volunteer.volunteer_type === "Presenting a lesson" || volunteer.volunteer_type === "Leading singing") && baseTimeSlot !== "unassigned" && (
           <div className="space-y-2">
             <Label htmlFor="presentation-order">Order</Label>
             <Select value={presentationOrder} onValueChange={setPresentationOrder}>
