@@ -59,6 +59,45 @@ const EVENT_DAYS = [
 
 const TIME_SLOTS = ["Morning Devotion", "Evening Devotion"]
 
+// Custom sort order for schedule display:
+// Opening Prayer -> Song Leader A -> Song Leader B -> Reading Scripture A -> Presenting A -> Reading Scripture B -> Presenting B -> Closing Prayer
+function getVolunteerSortOrder(vol: { volunteer_type: string; prayer_type: string | null }): number {
+  const type = vol.volunteer_type
+  const order = vol.prayer_type // "A", "B", "Opening Prayer", "Closing Prayer", or null
+
+  if (type === "Leading prayer") {
+    if (order === "Opening Prayer") return 0
+    if (order === "Closing Prayer") return 100
+    return 50 // fallback for prayer without position
+  }
+  if (type === "Leading singing") {
+    if (order === "A") return 10
+    if (order === "B") return 11
+    return 12
+  }
+  if (type === "Reading scripture") {
+    if (order === "A") return 20
+    if (order === "B") return 40
+    return 25
+  }
+  if (type === "Presenting a lesson") {
+    if (order === "A") return 30
+    if (order === "B") return 50
+    return 35
+  }
+  // Other volunteer types come after
+  return 200
+}
+
+function sortVolunteersForSchedule<T extends { volunteer_type: string; prayer_type: string | null; volunteer_name: string }>(volunteers: T[]): T[] {
+  return [...volunteers].sort((a, b) => {
+    const orderA = getVolunteerSortOrder(a)
+    const orderB = getVolunteerSortOrder(b)
+    if (orderA !== orderB) return orderA - orderB
+    return a.volunteer_name.localeCompare(b.volunteer_name)
+  })
+}
+
 function StatusBadge({ status, emailSent }: { status: string | null; emailSent: boolean }) {
   if (!emailSent) return <Badge variant="outline" className="text-xs gap-1"><HelpCircleIcon className="size-3" />Not Sent</Badge>
   if (status === "approved") return <Badge className="text-xs gap-1 bg-green-500 hover:bg-green-600"><CheckCircleIcon className="size-3" />Accepted</Badge>
@@ -358,15 +397,9 @@ export default function VolunteersPage() {
                                     }
 
                                     const normalise = (d: string | null) => d ? String(d).substring(0, 10) : null
-                                    const vols = scheduledVolunteers
-                                      .filter((v) => normalise(v.assigned_date) === day.date && v.time_slot === slot)
-                                      .sort((a, b) => {
-                                        // Sort by prayer_type: A before B, then alphabetically
-                                        const orderA = a.prayer_type === "A" ? 0 : a.prayer_type === "B" ? 1 : 2
-                                        const orderB = b.prayer_type === "A" ? 0 : b.prayer_type === "B" ? 1 : 2
-                                        if (orderA !== orderB) return orderA - orderB
-                                        return a.volunteer_name.localeCompare(b.volunteer_name)
-                                      })
+                                    const vols = sortVolunteersForSchedule(
+                                      scheduledVolunteers.filter((v) => normalise(v.assigned_date) === day.date && v.time_slot === slot)
+                                    )
                                     const isEmpty = vols.length === 0
 
                                     return (
@@ -861,14 +894,7 @@ export default function VolunteersPage() {
                             <p className="text-[10px] text-muted-foreground/40 text-center mt-4">Drop here</p>
                           ) : (
                             <div className="space-y-1">
-                              {cellVolunteers
-                                .sort((a, b) => {
-                                  const orderA = a.prayer_type === "A" ? 0 : a.prayer_type === "B" ? 1 : 2
-                                  const orderB = b.prayer_type === "A" ? 0 : b.prayer_type === "B" ? 1 : 2
-                                  if (orderA !== orderB) return orderA - orderB
-                                  return a.volunteer_name.localeCompare(b.volunteer_name)
-                                })
-                                .map((vol) => (
+                              {sortVolunteersForSchedule(cellVolunteers).map((vol) => (
                                   <div key={vol.id} className="text-[10px] leading-tight p-1 bg-muted/50 rounded">
                                     <p className="font-medium truncate">{vol.volunteer_name} {vol.family_last_name}</p>
                                     <p className="text-muted-foreground truncate">
