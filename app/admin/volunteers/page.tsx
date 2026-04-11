@@ -28,6 +28,8 @@ import {
   GripVerticalIcon,
 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
@@ -118,6 +120,11 @@ export default function VolunteersPage() {
   const [togglingPublish, setTogglingPublish] = useState(false)
   const [selectedRole, setSelectedRole] = useState<string>("all")
   const [draggingVolunteer, setDraggingVolunteer] = useState<Volunteer | null>(null)
+  const [dropDialogOpen, setDropDialogOpen] = useState(false)
+  const [dropTarget, setDropTarget] = useState<{ date: string; slot: string; label: string } | null>(null)
+  const [dropVolunteer, setDropVolunteer] = useState<Volunteer | null>(null)
+  const [dropPrayerType, setDropPrayerType] = useState<string>("A")
+  const [dropSaving, setDropSaving] = useState(false)
   const { toast } = useToast()
 
   const fetchVolunteers = useCallback(async () => {
@@ -858,29 +865,47 @@ export default function VolunteersPage() {
                           onDragLeave={(e) => {
                             e.currentTarget.classList.remove("ring-2", "ring-amber-400", "bg-amber-50")
                           }}
-                          onDrop={async (e) => {
+                          onDrop={(e) => {
                             e.preventDefault()
                             e.currentTarget.classList.remove("ring-2", "ring-amber-400", "bg-amber-50")
                             if (!draggingVolunteer) return
                             
-                            // Assign the volunteer to this slot
-                            try {
-                              const res = await fetch(`/api/volunteers/${draggingVolunteer.id}/schedule`, {
-                                method: "PATCH",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  assigned_date: day.date,
-                                  time_slot: slot,
-                                }),
-                              })
-                              if (res.ok) {
-                                toast({ title: "Assigned", description: `${draggingVolunteer.volunteer_name} assigned to ${slot} on ${day.label}` })
-                                fetchVolunteers()
+                            // Check if this volunteer type needs extra info
+                            const needsExtraInfo = ["Leading prayer", "Presenting a lesson", "Leading singing", "Reading scripture"].includes(draggingVolunteer.volunteer_type)
+                            
+                            if (needsExtraInfo) {
+                              // Show dialog to collect extra info
+                              setDropVolunteer(draggingVolunteer)
+                              setDropTarget({ date: day.date, slot, label: day.label })
+                              // Set default based on type
+                              if (draggingVolunteer.volunteer_type === "Leading prayer") {
+                                setDropPrayerType("Opening Prayer")
                               } else {
-                                toast({ title: "Error", description: "Failed to assign volunteer", variant: "destructive" })
+                                setDropPrayerType("A")
                               }
-                            } catch {
-                              toast({ title: "Error", description: "Failed to assign volunteer", variant: "destructive" })
+                              setDropDialogOpen(true)
+                            } else {
+                              // Directly assign without extra info
+                              (async () => {
+                                try {
+                                  const res = await fetch(`/api/volunteers/${draggingVolunteer.id}/schedule`, {
+                                    method: "PATCH",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      assigned_date: day.date,
+                                      time_slot: slot,
+                                    }),
+                                  })
+                                  if (res.ok) {
+                                    toast({ title: "Assigned", description: `${draggingVolunteer.volunteer_name} assigned to ${slot} on ${day.label}` })
+                                    fetchVolunteers()
+                                  } else {
+                                    toast({ title: "Error", description: "Failed to assign volunteer", variant: "destructive" })
+                                  }
+                                } catch {
+                                  toast({ title: "Error", description: "Failed to assign volunteer", variant: "destructive" })
+                                }
+                              })()
                             }
                             setDraggingVolunteer(null)
                           }}
@@ -927,6 +952,107 @@ export default function VolunteersPage() {
           }}
         />
       )}
+
+      {/* Drop Assignment Dialog */}
+      <Dialog open={dropDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setDropDialogOpen(false)
+          setDropVolunteer(null)
+          setDropTarget(null)
+        }
+      }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Assign Volunteer</DialogTitle>
+          </DialogHeader>
+          {dropVolunteer && dropTarget && (
+            <div className="space-y-4 py-2">
+              {/* Pre-populated info */}
+              <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Volunteer:</span>
+                  <span className="font-medium">{dropVolunteer.volunteer_name} {dropVolunteer.family_last_name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Role:</span>
+                  <span className="font-medium">{dropVolunteer.volunteer_type}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Date:</span>
+                  <span className="font-medium">{dropTarget.label}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Time Slot:</span>
+                  <span className="font-medium">{dropTarget.slot}</span>
+                </div>
+              </div>
+
+              {/* Extra info selection */}
+              <div className="space-y-2">
+                <Label>
+                  {dropVolunteer.volunteer_type === "Leading prayer" ? "Prayer Position" : "Order"}
+                </Label>
+                <Select value={dropPrayerType} onValueChange={setDropPrayerType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dropVolunteer.volunteer_type === "Leading prayer" ? (
+                      <>
+                        <SelectItem value="Opening Prayer">Opening Prayer</SelectItem>
+                        <SelectItem value="Closing Prayer">Closing Prayer</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="A">A - First</SelectItem>
+                        <SelectItem value="B">B - Second</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDropDialogOpen(false)} disabled={dropSaving}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!dropVolunteer || !dropTarget) return
+                setDropSaving(true)
+                try {
+                  const res = await fetch(`/api/volunteers/${dropVolunteer.id}/schedule`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      assigned_date: dropTarget.date,
+                      time_slot: dropTarget.slot,
+                      prayer_type: dropPrayerType,
+                    }),
+                  })
+                  if (res.ok) {
+                    toast({ title: "Assigned", description: `${dropVolunteer.volunteer_name} assigned to ${dropTarget.slot} on ${dropTarget.label}` })
+                    fetchVolunteers()
+                    setDropDialogOpen(false)
+                    setDropVolunteer(null)
+                    setDropTarget(null)
+                  } else {
+                    toast({ title: "Error", description: "Failed to assign volunteer", variant: "destructive" })
+                  }
+                } catch {
+                  toast({ title: "Error", description: "Failed to assign volunteer", variant: "destructive" })
+                } finally {
+                  setDropSaving(false)
+                }
+              }}
+              disabled={dropSaving}
+            >
+              {dropSaving ? "Saving..." : "Save Assignment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
