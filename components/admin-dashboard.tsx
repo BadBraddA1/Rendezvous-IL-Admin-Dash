@@ -250,7 +250,7 @@ export function AdminDashboard() {
     )
   }
 
-  const registrationOpensDate = new Date("2026-01-01T00:00:00-06:00")
+  const registrationClosesDate = new Date("2026-04-27T23:59:59-05:00")
   const eventStartsDate = new Date("2026-05-04T13:00:00-05:00")
 
   const filteredRegistrations = registrations
@@ -347,7 +347,7 @@ export function AdminDashboard() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <CountdownTimer targetDate={registrationOpensDate} label="Registration Opens" icon="calendar" />
+          <CountdownTimer targetDate={registrationClosesDate} label="Registration Closes" icon="calendar" />
           <CountdownTimer targetDate={eventStartsDate} label="Event Starts" icon="clock" />
         </div>
 
