@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         SELECT 
           r.id, r.family_last_name, r.email, r.checkin_qr_code,
           r.registration_fee, r.lodging_total, r.scholarship_donation,
-          r.payment_status, r.tshirt_total
+          r.payment_status, r.tshirt_total, r.climbing_tower_total
         FROM registrations r
         WHERE r.checkin_qr_code IS NOT NULL
         ORDER BY r.family_last_name
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         SELECT 
           r.id, r.family_last_name, r.email, r.checkin_qr_code,
           r.registration_fee, r.lodging_total, r.scholarship_donation,
-          r.payment_status, r.tshirt_total
+          r.payment_status, r.tshirt_total, r.climbing_tower_total
         FROM registrations r
         WHERE r.id = ${registrationId}
       `
@@ -44,20 +44,31 @@ export async function POST(request: NextRequest) {
         continue
       }
 
+      // Fetch volunteers for this registration
+      const volunteers = await sql`
+        SELECT volunteer_name, volunteer_type, assigned_date, time_slot, prayer_type
+        FROM volunteer_signups
+        WHERE registration_id = ${reg.id}
+        AND assigned_date IS NOT NULL
+        AND time_slot IS NOT NULL
+        ORDER BY assigned_date, time_slot, prayer_type
+      `
+
       const regFee = Number(reg.registration_fee || 0)
       const lodging = Number(reg.lodging_total || 0)
       const donation = Number(reg.scholarship_donation || 0)
       const tshirts = Number(reg.tshirt_total || 0)
-      const totalOwed = regFee + lodging + donation + tshirts
+      const adventure = Number(reg.climbing_tower_total || 0)
+      const totalOwed = regFee + lodging + donation + tshirts + adventure
       let amountDue = totalOwed
       if (reg.payment_status === "paid") amountDue = 0
-      else if (reg.payment_status === "partial") amountDue = lodging + donation + tshirts
+      else if (reg.payment_status === "partial") amountDue = lodging + donation + tshirts + adventure
 
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(reg.checkin_qr_code)}`
       payloads.push({
         to: reg.email,
         subject: "Your Check-In QR Code - Rendezvous 2026",
-        html: buildCheckinHtml(reg, regFee, lodging, donation, tshirts, totalOwed, amountDue, qrCodeUrl),
+        html: buildCheckinHtml(reg, regFee, lodging, donation, tshirts, adventure, totalOwed, amountDue, qrCodeUrl, volunteers),
       })
     }
 
@@ -88,10 +99,45 @@ function buildCheckinHtml(
   lodging: number,
   donation: number,
   tshirts: number,
+  adventure: number,
   totalOwed: number,
   amountDue: number,
-  qrCodeUrl: string
+  qrCodeUrl: string,
+  volunteers: any[]
 ): string {
+  // Build volunteer schedule HTML if there are any scheduled volunteers
+  let volunteerHtml = ""
+  if (volunteers.length > 0) {
+    const volunteerRows = volunteers.map((v) => {
+      const date = new Date(v.assigned_date + "T12:00:00")
+      const dayName = date.toLocaleDateString("en-US", { weekday: "short" })
+      const monthDay = date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      const orderLabel = v.prayer_type === "A" || v.prayer_type === "B" ? ` [${v.prayer_type}]` : (v.prayer_type ? ` - ${v.prayer_type}` : "")
+      return `<tr>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${v.volunteer_name}</td>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${v.volunteer_type}${orderLabel}</td>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${dayName}, ${monthDay}</td>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${v.time_slot}</td>
+      </tr>`
+    }).join("")
+
+    volunteerHtml = `
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f7ff;border:1px solid #a8d0f0;border-radius:8px;margin:24px 0;">
+        <tr><td style="padding:20px;">
+          <h3 style="color:#1e40af;margin:0 0 16px;font-size:16px;">Your Volunteer Schedule</h3>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:6px;overflow:hidden;">
+            <tr style="background:#e8f4ff;">
+              <th style="color:#1e40af;font-size:12px;font-weight:bold;padding:8px;text-align:left;">Name</th>
+              <th style="color:#1e40af;font-size:12px;font-weight:bold;padding:8px;text-align:left;">Role</th>
+              <th style="color:#1e40af;font-size:12px;font-weight:bold;padding:8px;text-align:left;">Date</th>
+              <th style="color:#1e40af;font-size:12px;font-weight:bold;padding:8px;text-align:left;">Time</th>
+            </tr>
+            ${volunteerRows}
+          </table>
+          <p style="color:#555;font-size:12px;margin:12px 0 0;font-style:italic;">Thank you for volunteering! Please arrive a few minutes early for your assigned times.</p>
+        </td></tr>
+      </table>`
+  }
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
@@ -123,6 +169,7 @@ function buildCheckinHtml(
                 <tr><td style="color:#555;font-size:13px;padding-bottom:8px;">Registration Fee</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${regFee.toFixed(2)}</td></tr>
                 <tr><td style="color:#555;font-size:13px;padding-bottom:8px;">Lodging</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${lodging.toFixed(2)}</td></tr>
                 ${tshirts > 0 ? `<tr><td style="color:#555;font-size:13px;padding-bottom:8px;">T-Shirts</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${tshirts.toFixed(2)}</td></tr>` : ""}
+                ${adventure > 0 ? `<tr><td style="color:#555;font-size:13px;padding-bottom:8px;">Adventure Activities</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${adventure.toFixed(2)}</td></tr>` : ""}
                 ${donation > 0 ? `<tr><td style="color:#555;font-size:13px;padding-bottom:8px;">Scholarship Donation</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${donation.toFixed(2)}</td></tr>` : ""}
                 <tr><td colspan="2" style="border-top:1px solid #e0d0c0;padding-top:12px;"></td></tr>
                 <tr><td style="color:#333;font-size:14px;font-weight:bold;">Total</td><td align="right" style="color:#333;font-size:14px;font-weight:bold;">$${totalOwed.toFixed(2)}</td></tr>
@@ -136,6 +183,7 @@ function buildCheckinHtml(
               </table>
             </td></tr>
           </table>
+          ${volunteerHtml}
           <p style="color:#555;font-size:14px;line-height:1.6;margin:24px 0 0;">
             We look forward to a wonderful time of fellowship with the ${reg.family_last_name} family!
           </p>

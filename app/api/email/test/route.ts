@@ -41,8 +41,9 @@ export function buildCheckinEmailHtml() {
                 <tr><td style="color:#555;font-size:13px;padding-bottom:4px;">Registration Fee</td><td align="right" style="color:#555;font-size:13px;padding-bottom:4px;">$150.00</td></tr>
                 <tr><td style="color:#555;font-size:13px;padding-bottom:4px;">Lodging (Motel)</td><td align="right" style="color:#555;font-size:13px;padding-bottom:4px;">$200.00</td></tr>
                 <tr><td style="color:#555;font-size:13px;padding-bottom:4px;">T-Shirts</td><td align="right" style="color:#555;font-size:13px;padding-bottom:4px;">$45.00</td></tr>
+                <tr><td style="color:#555;font-size:13px;padding-bottom:4px;">Adventure Activities</td><td align="right" style="color:#555;font-size:13px;padding-bottom:4px;">$30.00</td></tr>
                 <tr><td colspan="2" style="border-top:1px solid #e0d0c0;padding-top:10px;"></td></tr>
-                <tr><td style="color:#333;font-size:16px;font-weight:bold;">Total Due</td><td align="right" style="color:#8B4513;font-size:18px;font-weight:bold;">$395.00</td></tr>
+                <tr><td style="color:#333;font-size:16px;font-weight:bold;">Total Due</td><td align="right" style="color:#8B4513;font-size:18px;font-weight:bold;">$425.00</td></tr>
               </table>
             </td></tr>
           </table>
