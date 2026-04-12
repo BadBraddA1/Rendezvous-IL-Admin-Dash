@@ -77,6 +77,17 @@ export default function AdventurePage() {
                     </div>
                   </CardContent>
                 </Card>
+                <Card className="border-cyan-200 bg-cyan-50/60">
+                  <CardContent className="px-4 py-3 flex items-center gap-2">
+                    <MountainSnowIcon className="size-4 text-cyan-600" />
+                    <div>
+                      <div className="text-lg font-bold">
+                        {registrations.reduce((sum, r) => sum + Math.round(Number(r.climbing_tower_total) / 10), 0)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">participants</div>
+                    </div>
+                  </CardContent>
+                </Card>
                 <Card className="border-green-200 bg-green-50/60">
                   <CardContent className="px-4 py-3 flex items-center gap-2">
                     <DollarSignIcon className="size-4 text-green-500" />
@@ -115,7 +126,7 @@ export default function AdventurePage() {
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Family</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Contact</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Lodging</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Members</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Members | Signed Up</th>
                   <th className="text-right px-4 py-3 font-medium text-muted-foreground">Activity Total</th>
                 </tr>
               </thead>
@@ -143,9 +154,16 @@ export default function AdventurePage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <UsersIcon className="size-3.5" />
-                        {reg.family_member_count}
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <UsersIcon className="size-3.5" />
+                          {reg.family_member_count}
+                        </div>
+                        <span className="text-muted-foreground/50">|</span>
+                        <div className="flex items-center gap-1 text-blue-600 font-medium">
+                          <MountainSnowIcon className="size-3.5" />
+                          {Math.round(Number(reg.climbing_tower_total) / 10)}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
