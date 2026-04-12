@@ -125,7 +125,13 @@ export default function VolunteersPage() {
   const [dropVolunteer, setDropVolunteer] = useState<Volunteer | null>(null)
   const [dropPrayerType, setDropPrayerType] = useState<string>("A")
   const [dropSaving, setDropSaving] = useState(false)
+  const [recentlyDroppedId, setRecentlyDroppedId] = useState<number | null>(null)
   const { toast } = useToast()
+
+  const triggerGlow = (id: number) => {
+    setRecentlyDroppedId(id)
+    setTimeout(() => setRecentlyDroppedId(null), 30000)
+  }
 
   const fetchVolunteers = useCallback(async () => {
     try {
