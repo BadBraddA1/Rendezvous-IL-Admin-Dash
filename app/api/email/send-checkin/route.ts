@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         SELECT 
           r.id, r.family_last_name, r.email, r.checkin_qr_code,
           r.registration_fee, r.lodging_total, r.scholarship_donation,
-          r.payment_status, r.tshirt_total
+          r.payment_status, r.tshirt_total, r.climbing_tower_total
         FROM registrations r
         WHERE r.checkin_qr_code IS NOT NULL
         ORDER BY r.family_last_name
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         SELECT 
           r.id, r.family_last_name, r.email, r.checkin_qr_code,
           r.registration_fee, r.lodging_total, r.scholarship_donation,
-          r.payment_status, r.tshirt_total
+          r.payment_status, r.tshirt_total, r.climbing_tower_total
         FROM registrations r
         WHERE r.id = ${registrationId}
       `
@@ -48,16 +48,17 @@ export async function POST(request: NextRequest) {
       const lodging = Number(reg.lodging_total || 0)
       const donation = Number(reg.scholarship_donation || 0)
       const tshirts = Number(reg.tshirt_total || 0)
-      const totalOwed = regFee + lodging + donation + tshirts
+      const adventure = Number(reg.climbing_tower_total || 0)
+      const totalOwed = regFee + lodging + donation + tshirts + adventure
       let amountDue = totalOwed
       if (reg.payment_status === "paid") amountDue = 0
-      else if (reg.payment_status === "partial") amountDue = lodging + donation + tshirts
+      else if (reg.payment_status === "partial") amountDue = lodging + donation + tshirts + adventure
 
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(reg.checkin_qr_code)}`
       payloads.push({
         to: reg.email,
         subject: "Your Check-In QR Code - Rendezvous 2026",
-        html: buildCheckinHtml(reg, regFee, lodging, donation, tshirts, totalOwed, amountDue, qrCodeUrl),
+        html: buildCheckinHtml(reg, regFee, lodging, donation, tshirts, adventure, totalOwed, amountDue, qrCodeUrl),
       })
     }
 
@@ -88,6 +89,7 @@ function buildCheckinHtml(
   lodging: number,
   donation: number,
   tshirts: number,
+  adventure: number,
   totalOwed: number,
   amountDue: number,
   qrCodeUrl: string
@@ -123,6 +125,7 @@ function buildCheckinHtml(
                 <tr><td style="color:#555;font-size:13px;padding-bottom:8px;">Registration Fee</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${regFee.toFixed(2)}</td></tr>
                 <tr><td style="color:#555;font-size:13px;padding-bottom:8px;">Lodging</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${lodging.toFixed(2)}</td></tr>
                 ${tshirts > 0 ? `<tr><td style="color:#555;font-size:13px;padding-bottom:8px;">T-Shirts</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${tshirts.toFixed(2)}</td></tr>` : ""}
+                ${adventure > 0 ? `<tr><td style="color:#555;font-size:13px;padding-bottom:8px;">Adventure Activities</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${adventure.toFixed(2)}</td></tr>` : ""}
                 ${donation > 0 ? `<tr><td style="color:#555;font-size:13px;padding-bottom:8px;">Scholarship Donation</td><td align="right" style="color:#555;font-size:13px;padding-bottom:8px;">$${donation.toFixed(2)}</td></tr>` : ""}
                 <tr><td colspan="2" style="border-top:1px solid #e0d0c0;padding-top:12px;"></td></tr>
                 <tr><td style="color:#333;font-size:14px;font-weight:bold;">Total</td><td align="right" style="color:#333;font-size:14px;font-weight:bold;">$${totalOwed.toFixed(2)}</td></tr>
