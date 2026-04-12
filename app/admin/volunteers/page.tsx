@@ -767,7 +767,7 @@ export default function VolunteersPage() {
               </SelectContent>
             </Select>
             <div className="flex-1" />
-            <p className="text-xs text-muted-foreground">Drag volunteers from the left panel onto the schedule grid</p>
+            <p className="text-xs text-muted-foreground">Drag from the left panel to assign, or drag between cells to move</p>
           </div>
 
           <div className="grid grid-cols-[280px_1fr] gap-4">
@@ -919,15 +919,32 @@ export default function VolunteersPage() {
                             <p className="text-[10px] text-muted-foreground/40 text-center mt-4">Drop here</p>
                           ) : (
                             <div className="space-y-1">
-                              {sortVolunteersForSchedule(cellVolunteers).map((vol) => (
-                                  <div key={vol.id} className="text-[10px] leading-tight p-1 bg-muted/50 rounded">
+                              {sortVolunteersForSchedule(cellVolunteers).map((vol) => {
+                                const isGlowing = recentlyDroppedId === vol.id
+                                return (
+                                  <div
+                                    key={vol.id}
+                                    draggable
+                                    onDragStart={(e) => {
+                                      setDraggingVolunteer(vol)
+                                      e.dataTransfer.effectAllowed = "move"
+                                    }}
+                                    onDragEnd={() => setDraggingVolunteer(null)}
+                                    title="Drag to move to another slot"
+                                    className={`text-[10px] leading-tight p-1 rounded cursor-grab active:cursor-grabbing transition-all duration-700 ${
+                                      isGlowing
+                                        ? "bg-green-100 ring-2 ring-green-400 shadow-lg shadow-green-200 animate-pulse"
+                                        : "bg-muted/50 hover:bg-amber-50 hover:ring-1 hover:ring-amber-300"
+                                    }`}
+                                  >
                                     <p className="font-medium truncate">{vol.volunteer_name} {vol.family_last_name}</p>
                                     <p className="text-muted-foreground truncate">
                                       {vol.prayer_type === "A" || vol.prayer_type === "B" ? `[${vol.prayer_type}] ` : ""}
                                       {vol.volunteer_type}
                                     </p>
                                   </div>
-                                ))}
+                                )
+                              })}
                             </div>
                           )}
                         </div>
