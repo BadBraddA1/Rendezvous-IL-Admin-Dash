@@ -24,9 +24,48 @@ interface ScheduleEntry {
   volunteer_type: string
   assigned_date: string
   time_slot: string
+  prayer_type: string | null
   notes: string | null
   schedule_status: string | null
   claimed_lesson_title: string | null
+}
+
+// Custom sort order for schedule display:
+// Opening Prayer -> Song Leader A -> Song Leader B -> Reading Scripture A -> Presenting A -> Reading Scripture B -> Presenting B -> Closing Prayer
+function getVolunteerSortOrder(entry: ScheduleEntry): number {
+  const type = entry.volunteer_type
+  const order = entry.prayer_type // "A", "B", "Opening Prayer", "Closing Prayer", or null
+
+  if (type === "Leading prayer") {
+    if (order === "Opening Prayer") return 0
+    if (order === "Closing Prayer") return 100
+    return 50
+  }
+  if (type === "Leading singing") {
+    if (order === "A") return 10
+    if (order === "B") return 11
+    return 12
+  }
+  if (type === "Reading scripture") {
+    if (order === "A") return 20
+    if (order === "B") return 40
+    return 25
+  }
+  if (type === "Presenting a lesson") {
+    if (order === "A") return 30
+    if (order === "B") return 50
+    return 35
+  }
+  return 200
+}
+
+function sortScheduleEntries(entries: ScheduleEntry[]): ScheduleEntry[] {
+  return [...entries].sort((a, b) => {
+    const orderA = getVolunteerSortOrder(a)
+    const orderB = getVolunteerSortOrder(b)
+    if (orderA !== orderB) return orderA - orderB
+    return a.volunteer_name.localeCompare(b.volunteer_name)
+  })
 }
 
 const EVENT_DAYS = [
@@ -216,7 +255,7 @@ export default function HomePage() {
                     <h3 className="text-sm font-semibold text-amber-800 mb-2">{day.label}</h3>
                     <div className="space-y-2">
                       {TIME_SLOTS.map((slot) => {
-                        const slotEntries = dayEntries.filter((e) => e.time_slot === slot)
+                        const slotEntries = sortScheduleEntries(dayEntries.filter((e) => e.time_slot === slot))
                         if (slotEntries.length === 0) return null
                         return (
                           <div key={slot} className="flex gap-3 p-3 rounded-lg bg-muted/50">
@@ -225,15 +264,24 @@ export default function HomePage() {
                               {slot}
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              {slotEntries.map((entry, i) => (
-                                <div key={i} className="text-sm">
-                                  <span className="font-medium">{entry.volunteer_name}</span>
-                                  <span className="text-muted-foreground ml-1 text-xs">
-                                    — {entry.volunteer_type}
-                                    {entry.claimed_lesson_title && ` (${entry.claimed_lesson_title})`}
-                                  </span>
-                                </div>
-                              ))}
+                              {slotEntries.map((entry, i) => {
+                                // Build the role label with A/B or Opening/Closing Prayer
+                                let roleLabel = entry.volunteer_type
+                                if (entry.prayer_type === "A" || entry.prayer_type === "B") {
+                                  roleLabel = `[${entry.prayer_type}] ${entry.volunteer_type}`
+                                } else if (entry.prayer_type === "Opening Prayer" || entry.prayer_type === "Closing Prayer") {
+                                  roleLabel = entry.prayer_type
+                                }
+                                return (
+                                  <div key={i} className="text-sm">
+                                    <span className="font-medium">{entry.volunteer_name}</span>
+                                    <span className="text-muted-foreground ml-1 text-xs">
+                                      — {roleLabel}
+                                      {entry.claimed_lesson_title && ` (${entry.claimed_lesson_title})`}
+                                    </span>
+                                  </div>
+                                )
+                              })}
                             </div>
                           </div>
                         )
