@@ -34,6 +34,7 @@ export async function GET() {
         vs.volunteer_type,
         vs.assigned_date,
         vs.time_slot,
+        vs.prayer_type,
         vs.notes,
         vs.schedule_status,
         lt.title AS claimed_lesson_title
