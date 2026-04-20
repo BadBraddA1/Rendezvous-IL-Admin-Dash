@@ -34,6 +34,7 @@ import {
   BookOpenIcon,
   LogOutIcon,
   MountainSnowIcon,
+  CarIcon,
 } from "lucide-react"
 import { RegistrationDialog } from "./registration-dialog"
 import { RegistrationDetailsDialog } from "./registration-details-dialog"
@@ -492,6 +493,19 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground">Process motel key returns</div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Drive-In Passes card */}
+          <Link href="/admin/drivein">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-teal-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Drive-In Passes</CardTitle>
+                <CarIcon className="size-4 text-teal-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Meals only, no lodging</div>
               </CardContent>
             </Card>
           </Link>
