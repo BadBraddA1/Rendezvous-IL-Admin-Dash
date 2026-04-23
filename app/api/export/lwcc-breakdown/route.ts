@@ -30,11 +30,11 @@ export async function GET() {
     // Header
     csvRows.push("LAST NAME,FIRST NAME,AGE,LODGING,COST,NOTES")
 
-    // Family members rows
-    let currentFamily = ""
+    // Family members rows - group by reg_id to handle multiple families with same last name
+    let currentRegId = -1
     familyMembers.forEach((member: any) => {
-      const isNewFamily = member.family_last_name !== currentFamily
-      currentFamily = member.family_last_name
+      const isNewFamily = member.reg_id !== currentRegId
+      currentRegId = member.reg_id
       
       const lastName = isNewFamily ? member.family_last_name : ""
       const notes = isNewFamily && member.arrival_notes ? member.arrival_notes.replace(/"/g, '""') : ""

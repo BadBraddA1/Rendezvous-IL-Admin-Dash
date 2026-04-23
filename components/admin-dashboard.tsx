@@ -35,6 +35,7 @@ import {
   LogOutIcon,
   MountainSnowIcon,
   CarIcon,
+  UtensilsIcon,
 } from "lucide-react"
 import { RegistrationDialog } from "./registration-dialog"
 import { RegistrationDetailsDialog } from "./registration-details-dialog"
@@ -519,6 +520,19 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground">Meals only, no lodging</div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Meal Attendance Grid card */}
+          <Link href="/admin/meal-attendance">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-orange-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Meal Attendance</CardTitle>
+                <UtensilsIcon className="size-4 text-orange-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Easy grid view for meals</div>
               </CardContent>
             </Card>
           </Link>
