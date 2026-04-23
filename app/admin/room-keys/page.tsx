@@ -43,7 +43,7 @@ export default function RoomKeysPage() {
 
   const fetchRegistrations = async () => {
     try {
-      const response = await fetch("/api/registrations?lodging=motel")
+      const response = await fetch("/api/registrations")
       if (response.ok) {
         const data = await response.json()
         // Filter to only motel registrations
@@ -51,6 +51,8 @@ export default function RoomKeysPage() {
           r.lodging_type?.toLowerCase().includes("motel")
         )
         setRegistrations(motelRegs)
+      } else {
+        throw new Error("Failed to fetch")
       }
     } catch (error) {
       console.error("[v0] Error fetching registrations:", error)

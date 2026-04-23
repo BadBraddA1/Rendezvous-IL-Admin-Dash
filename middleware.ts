@@ -5,6 +5,8 @@ const PUBLIC_ADMIN_PATHS = [
   "/admin/login",
   "/admin/checkin",
   "/admin/checked-in",
+  "/admin/room-keys",
+  "/admin/room-key",
 ]
 
 // Auth token from environment variable - login route sets this value when password is correct
