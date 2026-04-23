@@ -29,7 +29,7 @@ export async function GET() {
         r.arrival_notes
       FROM family_members fm
       JOIN registrations r ON fm.registration_id = r.id
-      ORDER BY r.family_last_name, fm.age DESC NULLS FIRST, fm.first_name
+      ORDER BY r.family_last_name, r.id, fm.age DESC NULLS FIRST, fm.first_name
     `
 
     return NextResponse.json(familyMembers)

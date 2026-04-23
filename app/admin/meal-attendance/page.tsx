@@ -13,6 +13,7 @@ import {
   UsersIcon,
   CarIcon,
   RefreshCwIcon,
+  DownloadIcon,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -251,6 +252,14 @@ export default function MealAttendancePage() {
           <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
             <RefreshCwIcon className={`size-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={() => window.open("/api/export/lwcc-breakdown", "_blank")}
+          >
+            <DownloadIcon className="size-4 mr-2" />
+            Export CSV
           </Button>
         </div>
       </div>
