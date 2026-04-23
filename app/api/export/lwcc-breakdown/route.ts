@@ -23,20 +23,24 @@ export async function GET() {
   try {
     const sql = getDb()
 
-    // Get all family members with their costs and registration details
+    // Get all family members with their costs, registration details, and health info
     const familyMembers = await sql`
       SELECT 
         r.id as reg_id,
         r.family_last_name,
         r.arrival_notes,
         r.lodging_type,
-        r.total_cost,
         fm.first_name,
         fm.last_name,
         fm.age,
-        fm.person_cost
+        fm.person_cost,
+        hi.allergies,
+        hi.dietary_restrictions,
+        hi.medical_conditions,
+        hi.medications
       FROM family_members fm
       JOIN registrations r ON fm.registration_id = r.id
+      LEFT JOIN health_info hi ON fm.id = hi.family_member_id
       ORDER BY r.family_last_name, fm.age DESC NULLS FIRST, fm.first_name
     `
 
@@ -171,7 +175,7 @@ export async function GET() {
     csvRows.push(`,,,,"0-5 YRS:",${mealCounts.monday_dinner["0-5"]},${mealCounts.tuesday_breakfast["0-5"]},${mealCounts.tuesday_lunch["0-5"]},${mealCounts.tuesday_dinner["0-5"]},${mealCounts.wednesday_breakfast["0-5"]},${mealCounts.wednesday_lunch["0-5"]},${mealCounts.wednesday_dinner["0-5"]},${mealCounts.thursday_breakfast["0-5"]},${mealCounts.thursday_lunch["0-5"]},${mealCounts.thursday_dinner["0-5"]},${mealCounts.friday_breakfast["0-5"]},${mealCounts.friday_lunch["0-5"]}`)
 
     // Column headers
-    csvRows.push("#,LAST NAME,FIRST NAME,AGE,MON D,TUE B,TUE L,TUE D,WED B,WED L,WED D,THU B,THU L,THU D,FRI B,FRI L,NOTES,LODGING,TOTAL FEE (including RV / Tent fee)")
+    csvRows.push("#,LAST NAME,FIRST NAME,AGE,MON D,TUE B,TUE L,TUE D,WED B,WED L,WED D,THU B,THU L,THU D,FRI B,FRI L,NOTES,LODGING,TOTAL FEE (including RV / Tent fee),HEALTH INFO")
 
     // Track family for highlighting and grouping
     let currentFamily = ""
@@ -187,6 +191,14 @@ export async function GET() {
       const lodging = member.lodging_type || ""
       const fee = Number(member.person_cost || 0).toFixed(2)
       
+      // Build health info string
+      const healthParts: string[] = []
+      if (member.allergies) healthParts.push(`Allergies: ${member.allergies}`)
+      if (member.dietary_restrictions) healthParts.push(`Dietary: ${member.dietary_restrictions}`)
+      if (member.medical_conditions) healthParts.push(`Medical: ${member.medical_conditions}`)
+      if (member.medications) healthParts.push(`Meds: ${member.medications}`)
+      const healthInfo = healthParts.join("; ").replace(/"/g, '""')
+      
       csvRows.push([
         rowNum,
         `"${lastName}"`,
@@ -195,7 +207,8 @@ export async function GET() {
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // All meals = 1
         `"${notes}"`,
         `"${lodging}"`,
-        `$${fee}`
+        `$${fee}`,
+        `"${healthInfo}"`
       ].join(","))
       
       rowNum++
