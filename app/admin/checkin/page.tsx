@@ -24,6 +24,7 @@ interface Registration {
   registration_fee: number | null
   lodging_total: number | null
   tshirt_total: number | null
+  climbing_tower_total: number | null
   scholarship_donation: number | null
   scholarship_requested: boolean | null
   lodging_type: string | null
@@ -552,16 +553,28 @@ export default function CheckInPage() {
                 const regFee = Number(scannedRegistration.registration_fee || 0)
                 const lodging = Number(scannedRegistration.lodging_total || 0)
                 const tshirts = Number(scannedRegistration.tshirt_total || 0)
+                const adventure = Number(scannedRegistration.climbing_tower_total || 0)
                 const donation = Number(scannedRegistration.scholarship_donation || 0)
-                const total = regFee + lodging + tshirts + donation
+                const fullTotal = regFee + lodging + tshirts + adventure + donation
                 const isPaid = scannedRegistration.payment_status === "paid"
+                const isPartial = scannedRegistration.payment_status === "partial"
+                
+                // Calculate amount due based on payment status:
+                // - paid: $0 due
+                // - partial: reg fee already collected, only lodging + extras due
+                // - pending: full amount due
+                const amountDue = isPaid 
+                  ? 0 
+                  : isPartial 
+                    ? lodging + tshirts + adventure + donation 
+                    : fullTotal
 
                 return (
-                  <div className={`p-4 rounded-lg ${isPaid ? "bg-green-500/10" : "bg-amber-500/10"}`}>
+                  <div className={`p-4 rounded-lg ${isPaid ? "bg-green-500/10" : isPartial ? "bg-orange-500/10" : "bg-amber-500/10"}`}>
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-medium text-sm flex items-center gap-2">
                         <DollarSignIcon className="size-4" />
-                        {isPaid ? "Payment Complete" : "Amount Due at Check-In"}
+                        {isPaid ? "Payment Complete" : isPartial ? "Remaining Balance Due" : "Amount Due at Check-In"}
                       </h4>
                       {getPaymentBadge(scannedRegistration.payment_status)}
                     </div>
@@ -572,7 +585,13 @@ export default function CheckInPage() {
                           <span className="text-purple-600 text-xs">Handle with discretion.</span>
                         </div>
                       )}
-                      {regFee > 0 && (
+                      {isPartial && regFee > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-green-50 border border-green-200 rounded-lg">
+                          <CheckIcon className="size-4 text-green-600" />
+                          <span className="text-green-700 text-xs">Registration fee (${regFee.toFixed(2)}) already collected</span>
+                        </div>
+                      )}
+                      {!isPartial && regFee > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Registration Fee</span>
                           <span>${regFee.toFixed(2)}</span>
@@ -590,6 +609,12 @@ export default function CheckInPage() {
                           <span>${tshirts.toFixed(2)}</span>
                         </div>
                       )}
+                      {adventure > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Adventure Activities</span>
+                          <span>${adventure.toFixed(2)}</span>
+                        </div>
+                      )}
                       {donation > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Scholarship Donation</span>
@@ -597,14 +622,16 @@ export default function CheckInPage() {
                         </div>
                       )}
                       <div className="flex justify-between pt-2 border-t font-semibold text-base">
-                        <span>Total</span>
-                        <span className={isPaid ? "text-green-600" : "text-amber-600"}>${total.toFixed(2)}</span>
+                        <span>{isPartial ? "Amount to Collect" : "Total"}</span>
+                        <span className={isPaid ? "text-green-600" : isPartial ? "text-orange-600" : "text-amber-600"}>
+                          ${amountDue.toFixed(2)}
+                        </span>
                       </div>
                     </div>
                     {!isPaid && (
                       <Button onClick={handlePaymentReceived} className="w-full mt-4 gap-2" variant="outline">
                         <DollarSignIcon className="size-4" />
-                        Mark Payment Received
+                        Mark Payment Received (${amountDue.toFixed(2)})
                       </Button>
                     )}
                   </div>
