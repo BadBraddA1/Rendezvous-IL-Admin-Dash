@@ -24,6 +24,7 @@ interface FamilyMember {
   age: number | null
   family_last_name: string
   lodging_type: string
+  arrival_notes: string | null
   monday_dinner: boolean
   tuesday_breakfast: boolean
   tuesday_lunch: boolean
@@ -315,6 +316,7 @@ export default function MealAttendancePage() {
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-2 font-medium sticky left-0 bg-muted/50 min-w-[180px]">Name</th>
                   <th className="text-left p-2 font-medium min-w-[80px]">Type</th>
+                  <th className="text-left p-2 font-medium min-w-[150px]">Notes</th>
                   {MEALS.map(meal => (
                     <th key={meal.key} className="text-center p-1 font-medium min-w-[45px]">
                       <span className="text-xs">{meal.label}</span>
@@ -334,6 +336,13 @@ export default function MealAttendancePage() {
                       <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                         {fm.lodging_type || "Lodging"}
                       </Badge>
+                    </td>
+                    <td className="p-2">
+                      {fm.arrival_notes && (
+                        <span className="text-xs text-muted-foreground line-clamp-2" title={fm.arrival_notes}>
+                          {fm.arrival_notes}
+                        </span>
+                      )}
                     </td>
                     {MEALS.map(meal => (
                       <td key={meal.key} className="text-center p-1">
@@ -365,6 +374,11 @@ export default function MealAttendancePage() {
                         Drive-In
                       </Badge>
                     </td>
+                    <td className="p-2">
+                      <span className="text-xs text-muted-foreground">
+                        {pass.contact_name}
+                      </span>
+                    </td>
                     {MEALS.map(meal => (
                       <td key={meal.key} className="text-center p-1">
                         <Checkbox
@@ -380,7 +394,7 @@ export default function MealAttendancePage() {
 
                 {filteredFamilyMembers.length === 0 && filteredDriveIn.length === 0 && (
                   <tr>
-                    <td colSpan={14} className="p-8 text-center text-muted-foreground">
+                    <td colSpan={15} className="p-8 text-center text-muted-foreground">
                       No attendees found
                     </td>
                   </tr>
@@ -389,6 +403,7 @@ export default function MealAttendancePage() {
                 {/* Totals Row */}
                 <tr className="bg-muted font-semibold border-t-2">
                   <td className="p-2 sticky left-0 bg-muted">TOTALS</td>
+                  <td className="p-2"></td>
                   <td className="p-2"></td>
                   {MEALS.map(meal => (
                     <td key={meal.key} className="text-center p-1">

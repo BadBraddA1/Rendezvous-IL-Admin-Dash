@@ -25,7 +25,8 @@ export async function GET() {
         fm.friday_breakfast,
         fm.friday_lunch,
         r.family_last_name,
-        r.lodging_type
+        r.lodging_type,
+        r.arrival_notes
       FROM family_members fm
       JOIN registrations r ON fm.registration_id = r.id
       ORDER BY r.family_last_name, fm.age DESC NULLS FIRST, fm.first_name
