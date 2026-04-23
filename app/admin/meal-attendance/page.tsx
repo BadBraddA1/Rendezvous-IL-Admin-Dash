@@ -10,20 +10,33 @@ import {
   ArrowLeftIcon,
   Loader2Icon,
   UtensilsIcon,
-  SaveIcon,
-  PlusIcon,
+  UsersIcon,
+  CarIcon,
+  RefreshCwIcon,
 } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import Link from "next/link"
+
+interface FamilyMember {
+  id: number
+  registration_id: number
+  first_name: string
+  last_name: string
+  age: number | null
+  family_last_name: string
+  lodging_type: string
+  monday_dinner: boolean
+  tuesday_breakfast: boolean
+  tuesday_lunch: boolean
+  tuesday_dinner: boolean
+  wednesday_breakfast: boolean
+  wednesday_lunch: boolean
+  wednesday_dinner: boolean
+  thursday_breakfast: boolean
+  thursday_lunch: boolean
+  thursday_dinner: boolean
+  friday_breakfast: boolean
+  friday_lunch: boolean
+}
 
 interface DriveInPass {
   id: number
@@ -46,36 +59,47 @@ interface DriveInPass {
 }
 
 const MEALS = [
-  { key: "monday_dinner", label: "Mon D", fullLabel: "Monday Dinner" },
-  { key: "tuesday_breakfast", label: "Tue B", fullLabel: "Tuesday Breakfast" },
-  { key: "tuesday_lunch", label: "Tue L", fullLabel: "Tuesday Lunch" },
-  { key: "tuesday_dinner", label: "Tue D", fullLabel: "Tuesday Dinner" },
-  { key: "wednesday_breakfast", label: "Wed B", fullLabel: "Wednesday Breakfast" },
-  { key: "wednesday_lunch", label: "Wed L", fullLabel: "Wednesday Lunch" },
-  { key: "wednesday_dinner", label: "Wed D", fullLabel: "Wednesday Dinner" },
-  { key: "thursday_breakfast", label: "Thu B", fullLabel: "Thursday Breakfast" },
-  { key: "thursday_lunch", label: "Thu L", fullLabel: "Thursday Lunch" },
-  { key: "thursday_dinner", label: "Thu D", fullLabel: "Thursday Dinner" },
-  { key: "friday_breakfast", label: "Fri B", fullLabel: "Friday Breakfast" },
-  { key: "friday_lunch", label: "Fri L", fullLabel: "Friday Lunch" },
+  { key: "monday_dinner", label: "Mon D" },
+  { key: "tuesday_breakfast", label: "Tue B" },
+  { key: "tuesday_lunch", label: "Tue L" },
+  { key: "tuesday_dinner", label: "Tue D" },
+  { key: "wednesday_breakfast", label: "Wed B" },
+  { key: "wednesday_lunch", label: "Wed L" },
+  { key: "wednesday_dinner", label: "Wed D" },
+  { key: "thursday_breakfast", label: "Thu B" },
+  { key: "thursday_lunch", label: "Thu L" },
+  { key: "thursday_dinner", label: "Thu D" },
+  { key: "friday_breakfast", label: "Fri B" },
+  { key: "friday_lunch", label: "Fri L" },
 ] as const
 
 type MealKey = typeof MEALS[number]["key"]
 
 export default function MealAttendancePage() {
-  const [passes, setPasses] = useState<DriveInPass[]>([])
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
+  const [driveInPasses, setDriveInPasses] = useState<DriveInPass[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState<number | null>(null)
-  const [addDialogOpen, setAddDialogOpen] = useState(false)
-  const [newFamily, setNewFamily] = useState({ family_name: "", contact_name: "", num_adults: 1, num_children: 0 })
-  const [addingSaving, setAddingSaving] = useState(false)
+  const [filter, setFilter] = useState<"all" | "lodging" | "drivein">("all")
+  const [saving, setSaving] = useState<string | null>(null)
   const { toast } = useToast()
 
-  const fetchPasses = useCallback(async () => {
+  const fetchData = useCallback(async () => {
+    setLoading(true)
     try {
-      const res = await fetch("/api/drivein-passes")
-      const data = await res.json()
-      setPasses(Array.isArray(data) ? data : [])
+      const [fmRes, diRes] = await Promise.all([
+        fetch("/api/meal-attendance/family-members"),
+        fetch("/api/drivein-passes"),
+      ])
+
+      if (fmRes.ok) {
+        const data = await fmRes.json()
+        setFamilyMembers(Array.isArray(data) ? data : [])
+      }
+
+      if (diRes.ok) {
+        const data = await diRes.json()
+        setDriveInPasses(Array.isArray(data) ? data : [])
+      }
     } catch {
       toast({ title: "Error", description: "Failed to load data", variant: "destructive" })
     } finally {
@@ -84,18 +108,66 @@ export default function MealAttendancePage() {
   }, [toast])
 
   useEffect(() => {
-    fetchPasses()
-  }, [fetchPasses])
+    fetchData()
+  }, [fetchData])
 
-  const toggleMeal = async (pass: DriveInPass, mealKey: MealKey) => {
-    const newValue = !pass[mealKey]
-    
+  const toggleFamilyMemberMeal = async (member: FamilyMember, mealKey: MealKey) => {
+    const newValue = !(member[mealKey] ?? true)
+    const saveKey = `fm-${member.id}`
+
     // Optimistic update
-    setPasses(prev => prev.map(p => 
+    setFamilyMembers(prev => prev.map(fm =>
+      fm.id === member.id ? { ...fm, [mealKey]: newValue } : fm
+    ))
+
+    setSaving(saveKey)
+    try {
+      const res = await fetch(`/api/family-members/${member.id}/meals`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          monday_dinner: member.monday_dinner ?? true,
+          tuesday_breakfast: member.tuesday_breakfast ?? true,
+          tuesday_lunch: member.tuesday_lunch ?? true,
+          tuesday_dinner: member.tuesday_dinner ?? true,
+          wednesday_breakfast: member.wednesday_breakfast ?? true,
+          wednesday_lunch: member.wednesday_lunch ?? true,
+          wednesday_dinner: member.wednesday_dinner ?? true,
+          thursday_breakfast: member.thursday_breakfast ?? true,
+          thursday_lunch: member.thursday_lunch ?? true,
+          thursday_dinner: member.thursday_dinner ?? true,
+          friday_breakfast: member.friday_breakfast ?? true,
+          friday_lunch: member.friday_lunch ?? true,
+          [mealKey]: newValue,
+        }),
+      })
+
+      if (!res.ok) {
+        setFamilyMembers(prev => prev.map(fm =>
+          fm.id === member.id ? { ...fm, [mealKey]: !newValue } : fm
+        ))
+        toast({ title: "Error", description: "Failed to update", variant: "destructive" })
+      }
+    } catch {
+      setFamilyMembers(prev => prev.map(fm =>
+        fm.id === member.id ? { ...fm, [mealKey]: !newValue } : fm
+      ))
+      toast({ title: "Error", description: "Failed to update", variant: "destructive" })
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const toggleDriveInMeal = async (pass: DriveInPass, mealKey: MealKey) => {
+    const newValue = !pass[mealKey]
+    const saveKey = `di-${pass.id}`
+
+    // Optimistic update
+    setDriveInPasses(prev => prev.map(p =>
       p.id === pass.id ? { ...p, [mealKey]: newValue } : p
     ))
 
-    setSaving(pass.id)
+    setSaving(saveKey)
     try {
       const res = await fetch(`/api/drivein-passes/${pass.id}`, {
         method: "PUT",
@@ -104,15 +176,13 @@ export default function MealAttendancePage() {
       })
 
       if (!res.ok) {
-        // Revert on error
-        setPasses(prev => prev.map(p => 
+        setDriveInPasses(prev => prev.map(p =>
           p.id === pass.id ? { ...p, [mealKey]: !newValue } : p
         ))
         toast({ title: "Error", description: "Failed to update", variant: "destructive" })
       }
     } catch {
-      // Revert on error
-      setPasses(prev => prev.map(p => 
+      setDriveInPasses(prev => prev.map(p =>
         p.id === pass.id ? { ...p, [mealKey]: !newValue } : p
       ))
       toast({ title: "Error", description: "Failed to update", variant: "destructive" })
@@ -121,74 +191,31 @@ export default function MealAttendancePage() {
     }
   }
 
-  const addQuickFamily = async () => {
-    if (!newFamily.family_name.trim()) {
-      toast({ title: "Error", description: "Family name is required", variant: "destructive" })
-      return
-    }
-
-    setAddingSaving(true)
-    try {
-      const res = await fetch("/api/drivein-passes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...newFamily,
-          contact_name: newFamily.contact_name || newFamily.family_name,
-          monday_dinner: false,
-          tuesday_breakfast: false,
-          tuesday_lunch: false,
-          tuesday_dinner: false,
-          wednesday_breakfast: false,
-          wednesday_lunch: false,
-          wednesday_dinner: false,
-          thursday_breakfast: false,
-          thursday_lunch: false,
-          thursday_dinner: false,
-          friday_breakfast: false,
-          friday_lunch: false,
-        }),
-      })
-
-      if (res.ok) {
-        toast({ title: "Added", description: `${newFamily.family_name} family added` })
-        setAddDialogOpen(false)
-        setNewFamily({ family_name: "", contact_name: "", num_adults: 1, num_children: 0 })
-        fetchPasses()
-      } else {
-        toast({ title: "Error", description: "Failed to add family", variant: "destructive" })
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to add family", variant: "destructive" })
-    } finally {
-      setAddingSaving(false)
-    }
-  }
-
   // Calculate meal totals
   const mealTotals: Record<MealKey, number> = {
-    monday_dinner: 0,
-    tuesday_breakfast: 0,
-    tuesday_lunch: 0,
-    tuesday_dinner: 0,
-    wednesday_breakfast: 0,
-    wednesday_lunch: 0,
-    wednesday_dinner: 0,
-    thursday_breakfast: 0,
-    thursday_lunch: 0,
-    thursday_dinner: 0,
-    friday_breakfast: 0,
-    friday_lunch: 0,
+    monday_dinner: 0, tuesday_breakfast: 0, tuesday_lunch: 0, tuesday_dinner: 0,
+    wednesday_breakfast: 0, wednesday_lunch: 0, wednesday_dinner: 0,
+    thursday_breakfast: 0, thursday_lunch: 0, thursday_dinner: 0,
+    friday_breakfast: 0, friday_lunch: 0,
   }
 
-  passes.forEach((pass) => {
-    const people = pass.num_adults + pass.num_children
-    MEALS.forEach((meal) => {
-      if (pass[meal.key]) {
-        mealTotals[meal.key] += people
-      }
+  // Count lodging family members
+  familyMembers.forEach(fm => {
+    MEALS.forEach(meal => {
+      if (fm[meal.key] ?? true) mealTotals[meal.key]++
     })
   })
+
+  // Count drive-in passes (multiply by number of people)
+  driveInPasses.forEach(pass => {
+    const people = (pass.num_adults || 0) + (pass.num_children || 0)
+    MEALS.forEach(meal => {
+      if (pass[meal.key]) mealTotals[meal.key] += people
+    })
+  })
+
+  const filteredFamilyMembers = filter === "drivein" ? [] : familyMembers
+  const filteredDriveIn = filter === "lodging" ? [] : driveInPasses
 
   if (loading) {
     return (
@@ -199,167 +226,183 @@ export default function MealAttendancePage() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-[1800px] mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/admin">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeftIcon className="size-4" />
-            Back
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <UtensilsIcon className="size-6" />
-            Meal Attendance Grid
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Click checkboxes to toggle meal attendance
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/admin">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <ArrowLeftIcon className="size-4" />
+              Back
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <UtensilsIcon className="size-6" />
+              Meal Attendance Grid
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Click checkboxes to toggle - Lodging guests default to all meals
+            </p>
+          </div>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
-          <PlusIcon className="size-4" />
-          Add Family
+        <div className="flex gap-2 sm:ml-auto">
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+            <RefreshCwIcon className={`size-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          variant={filter === "all" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFilter("all")}
+        >
+          All ({familyMembers.length + driveInPasses.length})
+        </Button>
+        <Button
+          variant={filter === "lodging" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFilter("lodging")}
+          className="gap-1"
+        >
+          <UsersIcon className="size-4" />
+          Lodging ({familyMembers.length})
+        </Button>
+        <Button
+          variant={filter === "drivein" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFilter("drivein")}
+          className="gap-1"
+        >
+          <CarIcon className="size-4" />
+          Drive-In ({driveInPasses.length})
         </Button>
       </div>
 
-      {/* Grid Card */}
+      {/* Totals Summary */}
       <Card>
-        <CardHeader>
-          <CardTitle>Drive-In Pass Meal Grid</CardTitle>
-          <CardDescription>
-            {passes.length} families - Click to toggle attendance
-          </CardDescription>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Meal Totals (All Attendees)</CardTitle>
         </CardHeader>
         <CardContent>
-          {passes.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <UtensilsIcon className="size-12 mx-auto mb-3 opacity-30" />
-              <p>No drive-in families yet</p>
-              <Button onClick={() => setAddDialogOpen(true)} variant="outline" className="mt-4 gap-2">
-                <PlusIcon className="size-4" />
-                Add First Family
-              </Button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left p-2 font-medium sticky left-0 bg-muted/50 min-w-[150px]">Family</th>
-                    <th className="text-center p-2 font-medium min-w-[40px]">#</th>
-                    {MEALS.map((meal) => (
-                      <th key={meal.key} className="text-center p-1 font-medium min-w-[50px]">
-                        <span className="text-xs">{meal.label}</span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {passes.map((pass) => (
-                    <tr key={pass.id} className="border-b hover:bg-muted/30">
-                      <td className="p-2 font-medium sticky left-0 bg-background">
-                        <div>{pass.family_name}</div>
-                        <div className="text-xs text-muted-foreground">{pass.contact_name}</div>
-                      </td>
-                      <td className="text-center p-2">
-                        <Badge variant="outline" className="text-xs">
-                          {pass.num_adults + pass.num_children}
-                        </Badge>
-                      </td>
-                      {MEALS.map((meal) => (
-                        <td key={meal.key} className="text-center p-1">
-                          <Checkbox
-                            checked={pass[meal.key]}
-                            onCheckedChange={() => toggleMeal(pass, meal.key)}
-                            disabled={saving === pass.id}
-                            className="mx-auto"
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                  {/* Totals Row */}
-                  <tr className="bg-muted/50 font-semibold border-t-2">
-                    <td className="p-2 sticky left-0 bg-muted/50">TOTALS</td>
-                    <td className="text-center p-2">
-                      {passes.reduce((sum, p) => sum + p.num_adults + p.num_children, 0)}
-                    </td>
-                    {MEALS.map((meal) => (
-                      <td key={meal.key} className="text-center p-1">
-                        <Badge variant={mealTotals[meal.key] > 0 ? "default" : "secondary"} className="text-xs">
-                          {mealTotals[meal.key]}
-                        </Badge>
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div className="grid grid-cols-6 sm:grid-cols-12 gap-2 text-center">
+            {MEALS.map(meal => (
+              <div key={meal.key} className="bg-muted rounded p-2">
+                <div className="text-xs font-medium">{meal.label}</div>
+                <div className="text-lg font-bold text-primary">{mealTotals[meal.key]}</div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Quick Add Dialog */}
-      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Quick Add Family</DialogTitle>
-            <DialogDescription>
-              Add a new drive-in family, then check their meals in the grid
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="family_name">Family Name *</Label>
-              <Input
-                id="family_name"
-                value={newFamily.family_name}
-                onChange={(e) => setNewFamily({ ...newFamily, family_name: e.target.value })}
-                placeholder="Smith"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact_name">Contact Name</Label>
-              <Input
-                id="contact_name"
-                value={newFamily.contact_name}
-                onChange={(e) => setNewFamily({ ...newFamily, contact_name: e.target.value })}
-                placeholder="John Smith"
-              />
-            </div>
-            <div className="grid gap-4 grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="num_adults">Adults</Label>
-                <Input
-                  id="num_adults"
-                  type="number"
-                  min="0"
-                  value={newFamily.num_adults}
-                  onChange={(e) => setNewFamily({ ...newFamily, num_adults: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="num_children">Children</Label>
-                <Input
-                  id="num_children"
-                  type="number"
-                  min="0"
-                  value={newFamily.num_children}
-                  onChange={(e) => setNewFamily({ ...newFamily, num_children: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
+      {/* Main Grid */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>Attendance Grid</CardTitle>
+          <CardDescription>
+            {filteredFamilyMembers.length + filteredDriveIn.length} entries shown
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-2 font-medium sticky left-0 bg-muted/50 min-w-[180px]">Name</th>
+                  <th className="text-left p-2 font-medium min-w-[80px]">Type</th>
+                  {MEALS.map(meal => (
+                    <th key={meal.key} className="text-center p-1 font-medium min-w-[45px]">
+                      <span className="text-xs">{meal.label}</span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {/* Lodging Family Members */}
+                {filteredFamilyMembers.map((fm, idx) => (
+                  <tr key={`fm-${fm.id}`} className={idx % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                    <td className="p-2 sticky left-0 bg-inherit">
+                      <div className="font-medium">{fm.first_name} {fm.last_name}</div>
+                      <div className="text-xs text-muted-foreground">{fm.family_last_name}</div>
+                    </td>
+                    <td className="p-2">
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        {fm.lodging_type || "Lodging"}
+                      </Badge>
+                    </td>
+                    {MEALS.map(meal => (
+                      <td key={meal.key} className="text-center p-1">
+                        <Checkbox
+                          checked={fm[meal.key] ?? true}
+                          onCheckedChange={() => toggleFamilyMemberMeal(fm, meal.key)}
+                          disabled={saving === `fm-${fm.id}`}
+                          className="mx-auto"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+
+                {/* Drive-In Passes */}
+                {filteredDriveIn.map((pass, idx) => (
+                  <tr
+                    key={`di-${pass.id}`}
+                    className={`${(filteredFamilyMembers.length + idx) % 2 === 0 ? "bg-background" : "bg-muted/20"} bg-teal-50/30`}
+                  >
+                    <td className="p-2 sticky left-0 bg-inherit">
+                      <div className="font-medium">{pass.family_name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {pass.num_adults}A + {pass.num_children}C = {pass.num_adults + pass.num_children}
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                        Drive-In
+                      </Badge>
+                    </td>
+                    {MEALS.map(meal => (
+                      <td key={meal.key} className="text-center p-1">
+                        <Checkbox
+                          checked={pass[meal.key] ?? false}
+                          onCheckedChange={() => toggleDriveInMeal(pass, meal.key)}
+                          disabled={saving === `di-${pass.id}`}
+                          className="mx-auto"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+
+                {filteredFamilyMembers.length === 0 && filteredDriveIn.length === 0 && (
+                  <tr>
+                    <td colSpan={14} className="p-8 text-center text-muted-foreground">
+                      No attendees found
+                    </td>
+                  </tr>
+                )}
+
+                {/* Totals Row */}
+                <tr className="bg-muted font-semibold border-t-2">
+                  <td className="p-2 sticky left-0 bg-muted">TOTALS</td>
+                  <td className="p-2"></td>
+                  {MEALS.map(meal => (
+                    <td key={meal.key} className="text-center p-1">
+                      <Badge variant="default" className="text-xs">
+                        {mealTotals[meal.key]}
+                      </Badge>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={addQuickFamily} disabled={addingSaving} className="gap-2">
-              {addingSaving ? <Loader2Icon className="size-4 animate-spin" /> : <SaveIcon className="size-4" />}
-              Add Family
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
     </div>
   )
 }
