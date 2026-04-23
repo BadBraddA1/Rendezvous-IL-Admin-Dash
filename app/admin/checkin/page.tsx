@@ -33,6 +33,7 @@ interface Registration {
   checked_in: boolean | null
   checkin_qr_code: string | null
   room_keys: string[] | null
+  pre_assigned_keys: string[] | null
   family_members?: FamilyMember[]
 }
 
@@ -238,7 +239,11 @@ export default function CheckInPage() {
 
       const data = await response.json()
       setScannedRegistration(data)
-      setRoomKeys(data.room_keys || [])
+      // Use pre-assigned keys if available, otherwise use existing room_keys
+      const keysToUse = data.pre_assigned_keys?.length > 0 
+        ? data.pre_assigned_keys 
+        : (data.room_keys || [])
+      setRoomKeys(keysToUse)
       setQrInput("")
     } catch (error: any) {
       console.error("[v0] Error scanning QR:", error)
@@ -641,10 +646,23 @@ export default function CheckInPage() {
               {/* Room Keys - Only show for Motel lodging */}
               {scannedRegistration.lodging_type?.toLowerCase().includes("motel") && (
                 <div className="p-4 bg-blue-500/10 rounded-lg">
-                  <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-                    <KeyIcon className="size-4" />
-                    Room Key Numbers
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <KeyIcon className="size-4" />
+                      Room Key Numbers
+                    </h4>
+                    {scannedRegistration.pre_assigned_keys && scannedRegistration.pre_assigned_keys.length > 0 && (
+                      <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                        Pre-Assigned
+                      </Badge>
+                    )}
+                  </div>
+                  {scannedRegistration.pre_assigned_keys && scannedRegistration.pre_assigned_keys.length > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-2 mb-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <CheckIcon className="size-4 text-blue-600" />
+                      <span className="text-blue-700 text-xs">Keys pre-assigned: {scannedRegistration.pre_assigned_keys.join(", ")}</span>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     {roomKeys.map((key, index) => (
                       <div key={index} className="flex gap-2">

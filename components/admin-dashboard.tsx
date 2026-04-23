@@ -484,6 +484,19 @@ export function AdminDashboard() {
             </Card>
           </Link>
 
+          {/* Room Key Assignment card */}
+          <Link href="/admin/room-keys">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-blue-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Room Key Assignment</CardTitle>
+                <KeyIcon className="size-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Pre-assign motel room keys</div>
+              </CardContent>
+            </Card>
+          </Link>
+
           {/* Key Checkout card */}
           <Link href="/admin/checkout">
             <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
