@@ -310,15 +310,15 @@ export default function MealAttendancePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="text-left p-2 font-medium sticky left-0 bg-muted/50 min-w-[180px]">Name</th>
-                  <th className="text-left p-2 font-medium min-w-[80px]">Type</th>
-                  <th className="text-left p-2 font-medium min-w-[150px]">Notes</th>
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b bg-muted">
+                  <th className="text-left p-2 font-medium sticky left-0 bg-muted min-w-[180px] z-20">Name</th>
+                  <th className="text-left p-2 font-medium min-w-[80px] bg-muted">Type</th>
+                  <th className="text-left p-2 font-medium min-w-[150px] bg-muted">Notes</th>
                   {MEALS.map(meal => (
-                    <th key={meal.key} className="text-center p-1 font-medium min-w-[45px]">
+                    <th key={meal.key} className="text-center p-1 font-medium min-w-[45px] bg-muted">
                       <span className="text-xs">{meal.label}</span>
                     </th>
                   ))}
