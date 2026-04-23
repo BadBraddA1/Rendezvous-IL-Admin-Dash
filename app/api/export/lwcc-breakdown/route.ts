@@ -5,147 +5,140 @@ export async function GET() {
   try {
     const sql = getDb()
 
-    // Get all family members with their costs (lodging registrations)
+    // Get all family members with their costs, registration details, and meal attendance
     const familyMembers = await sql`
       SELECT 
         r.id as reg_id,
-        r.checkin_qr_code,
         r.family_last_name,
+        r.arrival_notes,
+        r.lodging_type,
         fm.first_name,
         fm.last_name,
         fm.age,
         fm.person_cost,
-        r.lodging_type,
-        'Lodging' as registration_type
+        fm.monday_dinner,
+        fm.tuesday_breakfast,
+        fm.tuesday_lunch,
+        fm.tuesday_dinner,
+        fm.wednesday_breakfast,
+        fm.wednesday_lunch,
+        fm.wednesday_dinner,
+        fm.thursday_breakfast,
+        fm.thursday_lunch,
+        fm.thursday_dinner,
+        fm.friday_breakfast,
+        fm.friday_lunch
       FROM family_members fm
       JOIN registrations r ON fm.registration_id = r.id
-      ORDER BY r.family_last_name, fm.first_name
+      ORDER BY r.family_last_name, r.id, fm.age DESC NULLS FIRST, fm.first_name
     `
 
-    // Get drive-in pass families
+    // Get drive-in passes
     const driveInPasses = await sql`
       SELECT 
         id,
         family_name,
-        contact_name,
         num_adults,
         num_children,
+        monday_dinner,
+        tuesday_breakfast,
+        tuesday_lunch,
+        tuesday_dinner,
+        wednesday_breakfast,
+        wednesday_lunch,
+        wednesday_dinner,
+        thursday_breakfast,
         thursday_lunch,
         thursday_dinner,
         friday_breakfast,
-        friday_lunch,
-        friday_dinner,
-        saturday_breakfast,
-        saturday_lunch,
-        saturday_dinner,
-        sunday_breakfast,
-        sunday_lunch
+        friday_lunch
       FROM drivein_passes
       ORDER BY family_name
     `
 
-    // Calculate totals for lodging
-    const totalLodgingCost = familyMembers.reduce((sum: number, member: any) => sum + (Number(member.person_cost) || 0), 0)
+    // Calculate total cost
+    const totalCost = familyMembers.reduce((sum: number, member: any) => sum + (Number(member.person_cost) || 0), 0)
 
-    // Build meal summary for drive-in passes
-    const getMealsList = (pass: any) => {
-      const meals: string[] = []
-      if (pass.thursday_lunch) meals.push("Thu Lunch")
-      if (pass.thursday_dinner) meals.push("Thu Dinner")
-      if (pass.friday_breakfast) meals.push("Fri Breakfast")
-      if (pass.friday_lunch) meals.push("Fri Lunch")
-      if (pass.friday_dinner) meals.push("Fri Dinner")
-      if (pass.saturday_breakfast) meals.push("Sat Breakfast")
-      if (pass.saturday_lunch) meals.push("Sat Lunch")
-      if (pass.saturday_dinner) meals.push("Sat Dinner")
-      if (pass.sunday_breakfast) meals.push("Sun Breakfast")
-      if (pass.sunday_lunch) meals.push("Sun Lunch")
-      return meals.join("; ")
-    }
+    // Build CSV rows
+    const csvRows: string[] = []
 
-    // Create CSV content
-    const headers = ["Reg ID", "QR Code", "Family Name", "First Name", "Last Name", "Age", "Cost Per Person", "Lodging Type", "Type"]
+    // Header with meal columns
+    csvRows.push("LAST NAME,FIRST NAME,AGE,Mon D,Tue B,Tue L,Tue D,Wed B,Wed L,Wed D,Thu B,Thu L,Thu D,Fri B,Fri L,LODGING,COST,NOTES")
 
-    const csvRows = [
-      headers.join(","),
-      // Lodging registrations
-      ...familyMembers.map((member: any) =>
-        [
-          member.reg_id || "",
-          `"${member.checkin_qr_code || ""}"`,
-          `"${member.family_last_name || ""}"`,
-          `"${member.first_name || ""}"`,
-          `"${member.last_name || ""}"`,
-          member.age || "",
-          Number(member.person_cost || 0).toFixed(2),
-          `"${member.lodging_type || ""}"`,
-          `"${member.registration_type || ""}"`,
-        ].join(","),
-      ),
-      "",
-      `"TOTAL LODGING COST",,,,,,${totalLodgingCost.toFixed(2)},,`,
-    ]
+    // Family members rows - group by reg_id to handle multiple families with same last name
+    let currentRegId = -1
+    familyMembers.forEach((member: any) => {
+      const isNewFamily = member.reg_id !== currentRegId
+      currentRegId = member.reg_id
+      
+      const lastName = isNewFamily ? member.family_last_name : ""
+      const notes = isNewFamily && member.arrival_notes ? member.arrival_notes.replace(/"/g, '""') : ""
+      const lodging = isNewFamily ? (member.lodging_type || "") : ""
+      const age = member.age === null || member.age === undefined || member.age === "" || Number(member.age) >= 18 ? "adult" : member.age
+      const fee = Number(member.person_cost || 0).toFixed(2)
+      
+      // Meal attendance (default to 1 if null/undefined for lodging guests)
+      const monD = (member.monday_dinner ?? true) ? 1 : ""
+      const tueB = (member.tuesday_breakfast ?? true) ? 1 : ""
+      const tueL = (member.tuesday_lunch ?? true) ? 1 : ""
+      const tueD = (member.tuesday_dinner ?? true) ? 1 : ""
+      const wedB = (member.wednesday_breakfast ?? true) ? 1 : ""
+      const wedL = (member.wednesday_lunch ?? true) ? 1 : ""
+      const wedD = (member.wednesday_dinner ?? true) ? 1 : ""
+      const thuB = (member.thursday_breakfast ?? true) ? 1 : ""
+      const thuL = (member.thursday_lunch ?? true) ? 1 : ""
+      const thuD = (member.thursday_dinner ?? true) ? 1 : ""
+      const friB = (member.friday_breakfast ?? true) ? 1 : ""
+      const friL = (member.friday_lunch ?? true) ? 1 : ""
+      
+      csvRows.push([
+        `"${lastName}"`,
+        `"${member.first_name || ""}"`,
+        age,
+        monD, tueB, tueL, tueD, wedB, wedL, wedD, thuB, thuL, thuD, friB, friL,
+        `"${lodging}"`,
+        `$${fee}`,
+        `"${notes}"`
+      ].join(","))
+    })
 
-    // Add Drive-In section if there are any
+    // Total row for lodging
+    csvRows.push("")
+    csvRows.push(`"LODGING TOTAL",,,,,,,,,,,,,,,,"$${totalCost.toFixed(2)}",`)
+
+    // Drive-in section
     if (driveInPasses.length > 0) {
       csvRows.push("")
       csvRows.push("")
-      csvRows.push("DRIVE-IN PASSES (Meals Only - No Lodging)")
-      csvRows.push(["ID", "Family Name", "Contact", "Adults", "Children", "Total People", "Meals"].join(","))
-      
-      driveInPasses.forEach((pass: any) => {
-        const totalPeople = (Number(pass.num_adults) || 0) + (Number(pass.num_children) || 0)
-        csvRows.push([
-          pass.id,
-          `"${pass.family_name || ""}"`,
-          `"${pass.contact_name || ""}"`,
-          pass.num_adults || 0,
-          pass.num_children || 0,
-          totalPeople,
-          `"${getMealsList(pass)}"`,
-        ].join(","))
-      })
-
-      // Meal counts summary
-      const mealCounts = {
-        thursday_lunch: 0,
-        thursday_dinner: 0,
-        friday_breakfast: 0,
-        friday_lunch: 0,
-        friday_dinner: 0,
-        saturday_breakfast: 0,
-        saturday_lunch: 0,
-        saturday_dinner: 0,
-        sunday_breakfast: 0,
-        sunday_lunch: 0,
-      }
+      csvRows.push("DRIVE-IN PASSES (Meals Only)")
+      csvRows.push("FAMILY,CONTACT,PEOPLE,Mon D,Tue B,Tue L,Tue D,Wed B,Wed L,Wed D,Thu B,Thu L,Thu D,Fri B,Fri L,,,")
 
       driveInPasses.forEach((pass: any) => {
         const people = (Number(pass.num_adults) || 0) + (Number(pass.num_children) || 0)
-        if (pass.thursday_lunch) mealCounts.thursday_lunch += people
-        if (pass.thursday_dinner) mealCounts.thursday_dinner += people
-        if (pass.friday_breakfast) mealCounts.friday_breakfast += people
-        if (pass.friday_lunch) mealCounts.friday_lunch += people
-        if (pass.friday_dinner) mealCounts.friday_dinner += people
-        if (pass.saturday_breakfast) mealCounts.saturday_breakfast += people
-        if (pass.saturday_lunch) mealCounts.saturday_lunch += people
-        if (pass.saturday_dinner) mealCounts.saturday_dinner += people
-        if (pass.sunday_breakfast) mealCounts.sunday_breakfast += people
-        if (pass.sunday_lunch) mealCounts.sunday_lunch += people
-      })
+        
+        const monD = pass.monday_dinner ? people : ""
+        const tueB = pass.tuesday_breakfast ? people : ""
+        const tueL = pass.tuesday_lunch ? people : ""
+        const tueD = pass.tuesday_dinner ? people : ""
+        const wedB = pass.wednesday_breakfast ? people : ""
+        const wedL = pass.wednesday_lunch ? people : ""
+        const wedD = pass.wednesday_dinner ? people : ""
+        const thuB = pass.thursday_breakfast ? people : ""
+        const thuL = pass.thursday_lunch ? people : ""
+        const thuD = pass.thursday_dinner ? people : ""
+        const friB = pass.friday_breakfast ? people : ""
+        const friL = pass.friday_lunch ? people : ""
 
-      csvRows.push("")
-      csvRows.push("DRIVE-IN MEAL COUNTS (Additional people for meals)")
-      csvRows.push(`"Thursday Lunch",${mealCounts.thursday_lunch}`)
-      csvRows.push(`"Thursday Dinner",${mealCounts.thursday_dinner}`)
-      csvRows.push(`"Friday Breakfast",${mealCounts.friday_breakfast}`)
-      csvRows.push(`"Friday Lunch",${mealCounts.friday_lunch}`)
-      csvRows.push(`"Friday Dinner",${mealCounts.friday_dinner}`)
-      csvRows.push(`"Saturday Breakfast",${mealCounts.saturday_breakfast}`)
-      csvRows.push(`"Saturday Lunch",${mealCounts.saturday_lunch}`)
-      csvRows.push(`"Saturday Dinner",${mealCounts.saturday_dinner}`)
-      csvRows.push(`"Sunday Breakfast",${mealCounts.sunday_breakfast}`)
-      csvRows.push(`"Sunday Lunch",${mealCounts.sunday_lunch}`)
+        csvRows.push([
+          `"${pass.family_name}"`,
+          `"Drive-In"`,
+          people,
+          monD, tueB, tueL, tueD, wedB, wedL, wedD, thuB, thuL, thuD, friB, friL,
+          `""`,
+          `""`,
+          `""`
+        ].join(","))
+      })
     }
 
     const csv = csvRows.join("\n")

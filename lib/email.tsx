@@ -95,12 +95,14 @@ export async function sendRegistrationConfirmation(data: {
   lodgingType: string
   lodgingTotal: number
   registrationFee: number
+  tshirtTotal: number
+  climbingTowerTotal: number
   scholarshipDonation: number
   checkinQrCode: string
 }) {
   try {
     const resend = getResend()
-    const totalOwed = data.registrationFee + data.lodgingTotal + data.scholarshipDonation
+    const totalOwed = data.registrationFee + data.lodgingTotal + data.tshirtTotal + data.climbingTowerTotal + data.scholarshipDonation
 
     const membersHtml = data.familyMembers.map(m =>
       `<tr><td style="padding:8px;border-bottom:1px solid #eee;">${m.name}</td><td style="padding:8px;border-bottom:1px solid #eee;">${m.age}</td><td style="padding:8px;border-bottom:1px solid #eee;">${m.baptized ? "Yes" : "No"}</td></tr>`
@@ -135,6 +137,8 @@ export async function sendRegistrationConfirmation(data: {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr><td style="color:#555;font-size:13px;padding-bottom:4px;">Registration Fee</td><td align="right" style="color:#555;font-size:13px;padding-bottom:4px;">$${data.registrationFee.toFixed(2)}</td></tr>
                 <tr><td style="color:#555;font-size:13px;padding-bottom:4px;">Lodging (${data.lodgingType || "N/A"})</td><td align="right" style="color:#555;font-size:13px;padding-bottom:4px;">$${data.lodgingTotal.toFixed(2)}</td></tr>
+                ${data.tshirtTotal > 0 ? `<tr><td style="color:#555;font-size:13px;padding-bottom:4px;">T-Shirts</td><td align="right" style="color:#555;font-size:13px;padding-bottom:4px;">$${data.tshirtTotal.toFixed(2)}</td></tr>` : ""}
+                ${data.climbingTowerTotal > 0 ? `<tr><td style="color:#555;font-size:13px;padding-bottom:4px;">Adventure Activities</td><td align="right" style="color:#555;font-size:13px;padding-bottom:4px;">$${data.climbingTowerTotal.toFixed(2)}</td></tr>` : ""}
                 ${data.scholarshipDonation > 0 ? `<tr><td style="color:#555;font-size:13px;padding-bottom:4px;">Scholarship Donation</td><td align="right" style="color:#555;font-size:13px;padding-bottom:4px;">$${data.scholarshipDonation.toFixed(2)}</td></tr>` : ""}
                 <tr><td colspan="2" style="border-top:1px solid #e0d0c0;padding-top:10px;"></td></tr>
                 <tr><td style="color:#333;font-size:16px;font-weight:bold;">Total</td><td align="right" style="color:#8B4513;font-size:18px;font-weight:bold;">$${totalOwed.toFixed(2)}</td></tr>

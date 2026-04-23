@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
       lodgingType: reg.lodging_type,
       lodgingTotal: Number(reg.lodging_total || 0),
       registrationFee: Number(reg.registration_fee || 0),
+      tshirtTotal: Number(reg.tshirt_total || 0),
+      climbingTowerTotal: Number(reg.climbing_tower_total || 0),
       scholarshipDonation: Number(reg.scholarship_donation || 0),
       checkinQrCode: reg.checkin_qr_code,
     })

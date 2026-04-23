@@ -38,31 +38,35 @@ interface DriveInPass {
   contact_email: string | null
   num_adults: number
   num_children: number
+  monday_dinner: boolean
+  tuesday_breakfast: boolean
+  tuesday_lunch: boolean
+  tuesday_dinner: boolean
+  wednesday_breakfast: boolean
+  wednesday_lunch: boolean
+  wednesday_dinner: boolean
+  thursday_breakfast: boolean
   thursday_lunch: boolean
   thursday_dinner: boolean
   friday_breakfast: boolean
   friday_lunch: boolean
-  friday_dinner: boolean
-  saturday_breakfast: boolean
-  saturday_lunch: boolean
-  saturday_dinner: boolean
-  sunday_breakfast: boolean
-  sunday_lunch: boolean
   notes: string | null
   created_at: string
 }
 
 const MEALS = [
+  { key: "monday_dinner", label: "Mon Dinner" },
+  { key: "tuesday_breakfast", label: "Tue Breakfast" },
+  { key: "tuesday_lunch", label: "Tue Lunch" },
+  { key: "tuesday_dinner", label: "Tue Dinner" },
+  { key: "wednesday_breakfast", label: "Wed Breakfast" },
+  { key: "wednesday_lunch", label: "Wed Lunch" },
+  { key: "wednesday_dinner", label: "Wed Dinner" },
+  { key: "thursday_breakfast", label: "Thu Breakfast" },
   { key: "thursday_lunch", label: "Thu Lunch" },
   { key: "thursday_dinner", label: "Thu Dinner" },
   { key: "friday_breakfast", label: "Fri Breakfast" },
   { key: "friday_lunch", label: "Fri Lunch" },
-  { key: "friday_dinner", label: "Fri Dinner" },
-  { key: "saturday_breakfast", label: "Sat Breakfast" },
-  { key: "saturday_lunch", label: "Sat Lunch" },
-  { key: "saturday_dinner", label: "Sat Dinner" },
-  { key: "sunday_breakfast", label: "Sun Breakfast" },
-  { key: "sunday_lunch", label: "Sun Lunch" },
 ] as const
 
 type MealKey = typeof MEALS[number]["key"]
@@ -74,16 +78,18 @@ const emptyForm = {
   contact_email: "",
   num_adults: 0,
   num_children: 0,
+  monday_dinner: false,
+  tuesday_breakfast: false,
+  tuesday_lunch: false,
+  tuesday_dinner: false,
+  wednesday_breakfast: false,
+  wednesday_lunch: false,
+  wednesday_dinner: false,
+  thursday_breakfast: false,
   thursday_lunch: false,
   thursday_dinner: false,
   friday_breakfast: false,
   friday_lunch: false,
-  friday_dinner: false,
-  saturday_breakfast: false,
-  saturday_lunch: false,
-  saturday_dinner: false,
-  sunday_breakfast: false,
-  sunday_lunch: false,
   notes: "",
 }
 
@@ -128,16 +134,18 @@ export default function DriveInPassesPage() {
       contact_email: pass.contact_email || "",
       num_adults: pass.num_adults,
       num_children: pass.num_children,
+      monday_dinner: pass.monday_dinner,
+      tuesday_breakfast: pass.tuesday_breakfast,
+      tuesday_lunch: pass.tuesday_lunch,
+      tuesday_dinner: pass.tuesday_dinner,
+      wednesday_breakfast: pass.wednesday_breakfast,
+      wednesday_lunch: pass.wednesday_lunch,
+      wednesday_dinner: pass.wednesday_dinner,
+      thursday_breakfast: pass.thursday_breakfast,
       thursday_lunch: pass.thursday_lunch,
       thursday_dinner: pass.thursday_dinner,
       friday_breakfast: pass.friday_breakfast,
       friday_lunch: pass.friday_lunch,
-      friday_dinner: pass.friday_dinner,
-      saturday_breakfast: pass.saturday_breakfast,
-      saturday_lunch: pass.saturday_lunch,
-      saturday_dinner: pass.saturday_dinner,
-      sunday_breakfast: pass.sunday_breakfast,
-      sunday_lunch: pass.sunday_lunch,
       notes: pass.notes || "",
     })
     setDialogOpen(true)
@@ -208,16 +216,18 @@ export default function DriveInPassesPage() {
 
   // Calculate meal counts
   const mealCounts: Record<MealKey, number> = {
+    monday_dinner: 0,
+    tuesday_breakfast: 0,
+    tuesday_lunch: 0,
+    tuesday_dinner: 0,
+    wednesday_breakfast: 0,
+    wednesday_lunch: 0,
+    wednesday_dinner: 0,
+    thursday_breakfast: 0,
     thursday_lunch: 0,
     thursday_dinner: 0,
     friday_breakfast: 0,
     friday_lunch: 0,
-    friday_dinner: 0,
-    saturday_breakfast: 0,
-    saturday_lunch: 0,
-    saturday_dinner: 0,
-    sunday_breakfast: 0,
-    sunday_lunch: 0,
   }
 
   passes.forEach((pass) => {

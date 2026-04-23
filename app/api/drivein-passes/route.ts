@@ -26,16 +26,18 @@ export async function POST(request: Request) {
       contact_email,
       num_adults,
       num_children,
+      monday_dinner,
+      tuesday_breakfast,
+      tuesday_lunch,
+      tuesday_dinner,
+      wednesday_breakfast,
+      wednesday_lunch,
+      wednesday_dinner,
+      thursday_breakfast,
       thursday_lunch,
       thursday_dinner,
       friday_breakfast,
       friday_lunch,
-      friday_dinner,
-      saturday_breakfast,
-      saturday_lunch,
-      saturday_dinner,
-      sunday_breakfast,
-      sunday_lunch,
       notes
     } = body
 
@@ -43,17 +45,21 @@ export async function POST(request: Request) {
       INSERT INTO drivein_passes (
         family_name, contact_name, contact_phone, contact_email,
         num_adults, num_children,
-        thursday_lunch, thursday_dinner,
-        friday_breakfast, friday_lunch, friday_dinner,
-        saturday_breakfast, saturday_lunch, saturday_dinner,
-        sunday_breakfast, sunday_lunch, notes
+        monday_dinner,
+        tuesday_breakfast, tuesday_lunch, tuesday_dinner,
+        wednesday_breakfast, wednesday_lunch, wednesday_dinner,
+        thursday_breakfast, thursday_lunch, thursday_dinner,
+        friday_breakfast, friday_lunch,
+        notes
       ) VALUES (
         ${family_name}, ${contact_name}, ${contact_phone || null}, ${contact_email || null},
         ${num_adults || 0}, ${num_children || 0},
-        ${thursday_lunch || false}, ${thursday_dinner || false},
-        ${friday_breakfast || false}, ${friday_lunch || false}, ${friday_dinner || false},
-        ${saturday_breakfast || false}, ${saturday_lunch || false}, ${saturday_dinner || false},
-        ${sunday_breakfast || false}, ${sunday_lunch || false}, ${notes || null}
+        ${monday_dinner || false},
+        ${tuesday_breakfast || false}, ${tuesday_lunch || false}, ${tuesday_dinner || false},
+        ${wednesday_breakfast || false}, ${wednesday_lunch || false}, ${wednesday_dinner || false},
+        ${thursday_breakfast || false}, ${thursday_lunch || false}, ${thursday_dinner || false},
+        ${friday_breakfast || false}, ${friday_lunch || false},
+        ${notes || null}
       )
       RETURNING *
     `
