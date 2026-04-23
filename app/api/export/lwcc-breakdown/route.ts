@@ -30,16 +30,18 @@ export async function GET() {
         contact_name,
         num_adults,
         num_children,
+        monday_dinner,
+        tuesday_breakfast,
+        tuesday_lunch,
+        tuesday_dinner,
+        wednesday_breakfast,
+        wednesday_lunch,
+        wednesday_dinner,
+        thursday_breakfast,
         thursday_lunch,
         thursday_dinner,
         friday_breakfast,
-        friday_lunch,
-        friday_dinner,
-        saturday_breakfast,
-        saturday_lunch,
-        saturday_dinner,
-        sunday_breakfast,
-        sunday_lunch
+        friday_lunch
       FROM drivein_passes
       ORDER BY family_name
     `
@@ -50,16 +52,18 @@ export async function GET() {
     // Build meal summary for drive-in passes
     const getMealsList = (pass: any) => {
       const meals: string[] = []
+      if (pass.monday_dinner) meals.push("Mon Dinner")
+      if (pass.tuesday_breakfast) meals.push("Tue Breakfast")
+      if (pass.tuesday_lunch) meals.push("Tue Lunch")
+      if (pass.tuesday_dinner) meals.push("Tue Dinner")
+      if (pass.wednesday_breakfast) meals.push("Wed Breakfast")
+      if (pass.wednesday_lunch) meals.push("Wed Lunch")
+      if (pass.wednesday_dinner) meals.push("Wed Dinner")
+      if (pass.thursday_breakfast) meals.push("Thu Breakfast")
       if (pass.thursday_lunch) meals.push("Thu Lunch")
       if (pass.thursday_dinner) meals.push("Thu Dinner")
       if (pass.friday_breakfast) meals.push("Fri Breakfast")
       if (pass.friday_lunch) meals.push("Fri Lunch")
-      if (pass.friday_dinner) meals.push("Fri Dinner")
-      if (pass.saturday_breakfast) meals.push("Sat Breakfast")
-      if (pass.saturday_lunch) meals.push("Sat Lunch")
-      if (pass.saturday_dinner) meals.push("Sat Dinner")
-      if (pass.sunday_breakfast) meals.push("Sun Breakfast")
-      if (pass.sunday_lunch) meals.push("Sun Lunch")
       return meals.join("; ")
     }
 
@@ -108,44 +112,50 @@ export async function GET() {
 
       // Meal counts summary
       const mealCounts = {
+        monday_dinner: 0,
+        tuesday_breakfast: 0,
+        tuesday_lunch: 0,
+        tuesday_dinner: 0,
+        wednesday_breakfast: 0,
+        wednesday_lunch: 0,
+        wednesday_dinner: 0,
+        thursday_breakfast: 0,
         thursday_lunch: 0,
         thursday_dinner: 0,
         friday_breakfast: 0,
         friday_lunch: 0,
-        friday_dinner: 0,
-        saturday_breakfast: 0,
-        saturday_lunch: 0,
-        saturday_dinner: 0,
-        sunday_breakfast: 0,
-        sunday_lunch: 0,
       }
 
       driveInPasses.forEach((pass: any) => {
         const people = (Number(pass.num_adults) || 0) + (Number(pass.num_children) || 0)
+        if (pass.monday_dinner) mealCounts.monday_dinner += people
+        if (pass.tuesday_breakfast) mealCounts.tuesday_breakfast += people
+        if (pass.tuesday_lunch) mealCounts.tuesday_lunch += people
+        if (pass.tuesday_dinner) mealCounts.tuesday_dinner += people
+        if (pass.wednesday_breakfast) mealCounts.wednesday_breakfast += people
+        if (pass.wednesday_lunch) mealCounts.wednesday_lunch += people
+        if (pass.wednesday_dinner) mealCounts.wednesday_dinner += people
+        if (pass.thursday_breakfast) mealCounts.thursday_breakfast += people
         if (pass.thursday_lunch) mealCounts.thursday_lunch += people
         if (pass.thursday_dinner) mealCounts.thursday_dinner += people
         if (pass.friday_breakfast) mealCounts.friday_breakfast += people
         if (pass.friday_lunch) mealCounts.friday_lunch += people
-        if (pass.friday_dinner) mealCounts.friday_dinner += people
-        if (pass.saturday_breakfast) mealCounts.saturday_breakfast += people
-        if (pass.saturday_lunch) mealCounts.saturday_lunch += people
-        if (pass.saturday_dinner) mealCounts.saturday_dinner += people
-        if (pass.sunday_breakfast) mealCounts.sunday_breakfast += people
-        if (pass.sunday_lunch) mealCounts.sunday_lunch += people
       })
 
       csvRows.push("")
       csvRows.push("DRIVE-IN MEAL COUNTS (Additional people for meals)")
+      csvRows.push(`"Monday Dinner",${mealCounts.monday_dinner}`)
+      csvRows.push(`"Tuesday Breakfast",${mealCounts.tuesday_breakfast}`)
+      csvRows.push(`"Tuesday Lunch",${mealCounts.tuesday_lunch}`)
+      csvRows.push(`"Tuesday Dinner",${mealCounts.tuesday_dinner}`)
+      csvRows.push(`"Wednesday Breakfast",${mealCounts.wednesday_breakfast}`)
+      csvRows.push(`"Wednesday Lunch",${mealCounts.wednesday_lunch}`)
+      csvRows.push(`"Wednesday Dinner",${mealCounts.wednesday_dinner}`)
+      csvRows.push(`"Thursday Breakfast",${mealCounts.thursday_breakfast}`)
       csvRows.push(`"Thursday Lunch",${mealCounts.thursday_lunch}`)
       csvRows.push(`"Thursday Dinner",${mealCounts.thursday_dinner}`)
       csvRows.push(`"Friday Breakfast",${mealCounts.friday_breakfast}`)
       csvRows.push(`"Friday Lunch",${mealCounts.friday_lunch}`)
-      csvRows.push(`"Friday Dinner",${mealCounts.friday_dinner}`)
-      csvRows.push(`"Saturday Breakfast",${mealCounts.saturday_breakfast}`)
-      csvRows.push(`"Saturday Lunch",${mealCounts.saturday_lunch}`)
-      csvRows.push(`"Saturday Dinner",${mealCounts.saturday_dinner}`)
-      csvRows.push(`"Sunday Breakfast",${mealCounts.sunday_breakfast}`)
-      csvRows.push(`"Sunday Lunch",${mealCounts.sunday_lunch}`)
     }
 
     const csv = csvRows.join("\n")
