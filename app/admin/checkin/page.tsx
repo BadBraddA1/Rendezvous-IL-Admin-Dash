@@ -46,6 +46,7 @@ export default function CheckInPage() {
   const [cameraError, setCameraError] = useState<string | null>(null)
   const [cameraStarting, setCameraStarting] = useState(false)
   const [roomKeys, setRoomKeys] = useState<string[]>([])
+  const [keysTakenCount, setKeysTakenCount] = useState<number>(2)
   const { toast } = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
   const html5QrCodeRef = useRef<any>(null)
@@ -279,7 +280,8 @@ export default function CheckInPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          room_keys: isMotel ? roomKeys.filter(k => k.trim()) : null 
+          room_keys: isMotel ? roomKeys.filter(k => k.trim()) : null,
+          keys_taken_count: isMotel ? keysTakenCount : null
         }),
       })
 
@@ -290,6 +292,7 @@ export default function CheckInPage() {
         })
         setScannedRegistration(null)
         setRoomKeys([])
+        setKeysTakenCount(2)
       }
     } catch (error) {
       console.error("[v0] Error checking in:", error)
@@ -705,6 +708,32 @@ export default function CheckInPage() {
                       <PlusIcon className="size-4 mr-2" />
                       Add Another Room Key
                     </Button>
+                  </div>
+                  
+                  {/* Keys Taken Count */}
+                  <div className="mt-4 pt-4 border-t border-blue-200">
+                    <h5 className="text-sm font-medium mb-2">How many keys taken per room?</h5>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={keysTakenCount === 1 ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setKeysTakenCount(1)}
+                        className="flex-1"
+                      >
+                        1 Key
+                      </Button>
+                      <Button
+                        variant={keysTakenCount === 2 ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setKeysTakenCount(2)}
+                        className="flex-1"
+                      >
+                        2 Keys
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      This helps track how many keys to collect at checkout
+                    </p>
                   </div>
                 </div>
               )}
