@@ -23,7 +23,7 @@ export async function GET() {
   try {
     const sql = getDb()
 
-    // Get all family members with their costs, registration details, and health info
+    // Get all family members with their costs and registration details
     const familyMembers = await sql`
       SELECT 
         r.id as reg_id,
@@ -33,16 +33,27 @@ export async function GET() {
         fm.first_name,
         fm.last_name,
         fm.age,
-        fm.person_cost,
-        hi.allergies,
-        hi.dietary_restrictions,
-        hi.medical_conditions,
-        hi.medications
+        fm.person_cost
       FROM family_members fm
       JOIN registrations r ON fm.registration_id = r.id
-      LEFT JOIN health_info hi ON fm.id = hi.family_member_id
       ORDER BY r.family_last_name, fm.age DESC NULLS FIRST, fm.first_name
     `
+
+    // Get health info separately (linked by registration_id and full_name)
+    const healthInfo = await sql`
+      SELECT registration_id, full_name, condition, medication_on_hand
+      FROM health_info
+    `
+    
+    // Create a lookup map for health info by registration_id and name
+    const healthMap = new Map<string, { condition: string; medication_on_hand: string }>()
+    healthInfo.forEach((hi: any) => {
+      const key = `${hi.registration_id}-${(hi.full_name || "").toLowerCase().trim()}`
+      healthMap.set(key, { 
+        condition: hi.condition || "", 
+        medication_on_hand: hi.medication_on_hand || "" 
+      })
+    })
 
     // Get drive-in pass families
     const driveInPasses = await sql`
@@ -191,13 +202,14 @@ export async function GET() {
       const lodging = member.lodging_type || ""
       const fee = Number(member.person_cost || 0).toFixed(2)
       
-      // Build health info string
+      // Build health info string from lookup
+      const fullName = `${member.first_name || ""} ${member.last_name || ""}`.toLowerCase().trim()
+      const healthKey = `${member.reg_id}-${fullName}`
+      const memberHealth = healthMap.get(healthKey)
       const healthParts: string[] = []
-      if (member.allergies) healthParts.push(`Allergies: ${member.allergies}`)
-      if (member.dietary_restrictions) healthParts.push(`Dietary: ${member.dietary_restrictions}`)
-      if (member.medical_conditions) healthParts.push(`Medical: ${member.medical_conditions}`)
-      if (member.medications) healthParts.push(`Meds: ${member.medications}`)
-      const healthInfo = healthParts.join("; ").replace(/"/g, '""')
+      if (memberHealth?.condition) healthParts.push(`Condition: ${memberHealth.condition}`)
+      if (memberHealth?.medication_on_hand) healthParts.push(`Meds: ${memberHealth.medication_on_hand}`)
+      const healthInfoStr = healthParts.join("; ").replace(/"/g, '""')
       
       csvRows.push([
         rowNum,
@@ -208,7 +220,7 @@ export async function GET() {
         `"${notes}"`,
         `"${lodging}"`,
         `$${fee}`,
-        `"${healthInfo}"`
+        `"${healthInfoStr}"`
       ].join(","))
       
       rowNum++
