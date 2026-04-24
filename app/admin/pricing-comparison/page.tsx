@@ -15,6 +15,8 @@ import {
   MinusIcon,
   DollarSignIcon,
   UsersIcon,
+  CheckIcon,
+  ZapIcon,
 } from "lucide-react"
 
 interface FamilyMember {
@@ -22,6 +24,8 @@ interface FamilyMember {
   first_name: string
   age: number | null
   person_cost: string
+  expected_cost: number
+  rate_category: string
 }
 
 interface Comparison {
@@ -47,6 +51,7 @@ export default function PricingComparisonPage() {
   const [comparisons, setComparisons] = useState<Comparison[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [applying, setApplying] = useState<number | "all" | null>(null)
   const { toast } = useToast()
 
   const fetchData = async () => {
@@ -73,6 +78,72 @@ export default function PricingComparisonPage() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  const applyRates = async (comp: Comparison) => {
+    setApplying(comp.id)
+    try {
+      const response = await fetch("/api/pricing-comparison/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          registrationId: comp.id,
+          expectedRegFee: comp.expected_reg_fee,
+          expectedLodgingTotal: comp.expected_lodging_total,
+          memberUpdates: comp.family_members.map(fm => ({
+            id: fm.id,
+            expected_cost: fm.expected_cost
+          }))
+        })
+      })
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: `Applied new rates to ${comp.family_last_name} family`,
+        })
+        fetchData()
+      } else {
+        throw new Error("Failed")
+      }
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to apply rates",
+        variant: "destructive",
+      })
+    } finally {
+      setApplying(null)
+    }
+  }
+
+  const applyAllRates = async () => {
+    if (!confirm("Are you sure you want to apply new rates to ALL registrations? This will update all totals based on the current rate chart.")) {
+      return
+    }
+    setApplying("all")
+    try {
+      const response = await fetch("/api/pricing-comparison/apply", {
+        method: "PUT"
+      })
+      if (response.ok) {
+        const data = await response.json()
+        toast({
+          title: "Success",
+          description: `Applied new rates to ${data.updated} registrations`,
+        })
+        fetchData()
+      } else {
+        throw new Error("Failed")
+      }
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to apply rates",
+        variant: "destructive",
+      })
+    } finally {
+      setApplying(null)
+    }
+  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -105,7 +176,7 @@ export default function PricingComparisonPage() {
               <p className="text-muted-foreground">Compare old totals vs. rate chart expected totals</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Link href="/admin/rate-chart">
               <Button variant="outline" size="sm">
                 <DollarSignIcon className="size-4 mr-2" />
@@ -115,6 +186,20 @@ export default function PricingComparisonPage() {
             <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
               <RefreshCwIcon className={`size-4 mr-2 ${loading ? "animate-spin" : ""}`} />
               Refresh
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={applyAllRates} 
+              disabled={applying === "all" || loading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {applying === "all" ? (
+                <Loader2Icon className="size-4 mr-2 animate-spin" />
+              ) : (
+                <ZapIcon className="size-4 mr-2" />
+              )}
+              Apply All New Rates
             </Button>
           </div>
         </div>
@@ -242,33 +327,83 @@ export default function PricingComparisonPage() {
                         {expandedId === comp.id && (
                           <tr className="bg-muted/30">
                             <td colSpan={6} className="p-4">
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
                                 <div>
-                                  <p className="text-muted-foreground">Reg Fee</p>
-                                  <p>Old: {formatCurrency(comp.old_reg_fee)} → Expected: {formatCurrency(comp.expected_reg_fee)}</p>
+                                  <p className="text-muted-foreground text-xs">Reg Fee</p>
+                                  <p className="text-gray-500">Old: {formatCurrency(comp.old_reg_fee)}</p>
+                                  <p className="text-blue-600 font-medium">New: {formatCurrency(comp.expected_reg_fee)}</p>
                                 </div>
                                 <div>
-                                  <p className="text-muted-foreground">Lodging</p>
-                                  <p>Old: {formatCurrency(comp.old_lodging_total)} → Expected: {formatCurrency(comp.expected_lodging_total)}</p>
+                                  <p className="text-muted-foreground text-xs">Lodging Total</p>
+                                  <p className="text-gray-500">Old: {formatCurrency(comp.old_lodging_total)}</p>
+                                  <p className="text-blue-600 font-medium">New: {formatCurrency(comp.expected_lodging_total)}</p>
                                 </div>
                                 <div>
-                                  <p className="text-muted-foreground">T-Shirts</p>
+                                  <p className="text-muted-foreground text-xs">T-Shirts</p>
                                   <p>{formatCurrency(comp.tshirt_total)}</p>
                                 </div>
                                 <div>
-                                  <p className="text-muted-foreground">Climbing + Donation</p>
+                                  <p className="text-muted-foreground text-xs">Climbing + Donation</p>
                                   <p>{formatCurrency(comp.climbing_total + comp.donation)}</p>
                                 </div>
                               </div>
-                              <div className="mt-4">
-                                <p className="text-muted-foreground text-xs mb-2">Family Members:</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {comp.family_members.map((fm) => (
-                                    <Badge key={fm.id} variant="secondary" className="text-xs">
-                                      {fm.first_name} (Age {fm.age ?? "?"}) - ${fm.person_cost}
-                                    </Badge>
-                                  ))}
-                                </div>
+                              
+                              {/* Family Members with Rate Details */}
+                              <div className="border rounded-lg overflow-hidden mb-4">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="bg-muted/50 border-b">
+                                      <th className="text-left p-2 font-medium">Name</th>
+                                      <th className="text-center p-2 font-medium">Age</th>
+                                      <th className="text-left p-2 font-medium">Rate Category</th>
+                                      <th className="text-right p-2 font-medium text-gray-500">Old Cost</th>
+                                      <th className="text-right p-2 font-medium text-blue-600">New Cost</th>
+                                      <th className="text-right p-2 font-medium">Diff</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {comp.family_members.map((fm) => {
+                                      const oldCost = Number(fm.person_cost) || 0
+                                      const diff = fm.expected_cost - oldCost
+                                      return (
+                                        <tr key={fm.id} className="border-b last:border-0">
+                                          <td className="p-2 font-medium">{fm.first_name}</td>
+                                          <td className="p-2 text-center">{fm.age ?? "?"}</td>
+                                          <td className="p-2">
+                                            <Badge variant="outline" className="text-xs">
+                                              {fm.rate_category}
+                                            </Badge>
+                                          </td>
+                                          <td className="p-2 text-right font-mono text-gray-500">{formatCurrency(oldCost)}</td>
+                                          <td className="p-2 text-right font-mono text-blue-600 font-semibold">{formatCurrency(fm.expected_cost)}</td>
+                                          <td className={`p-2 text-right font-mono ${diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : ""}`}>
+                                            {diff !== 0 ? (diff > 0 ? "+" : "") + formatCurrency(diff) : "-"}
+                                          </td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                              
+                              {/* Apply Button */}
+                              <div className="flex justify-end">
+                                <Button
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    applyRates(comp)
+                                  }}
+                                  disabled={applying === comp.id || comp.difference === 0}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  {applying === comp.id ? (
+                                    <Loader2Icon className="size-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <CheckIcon className="size-4 mr-2" />
+                                  )}
+                                  Apply New Rates to {comp.family_last_name}
+                                </Button>
                               </div>
                             </td>
                           </tr>

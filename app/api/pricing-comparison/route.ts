@@ -62,46 +62,64 @@ export async function GET() {
       let expectedLodgingTotal = 0
 
       const members = reg.family_members || []
-      members.forEach((member: any) => {
+      const membersWithExpected = members.map((member: any) => {
         const age = member.age || 0
-        let memberCost = 0
+        let expectedCost = 0
+        let rateCategory = "Unknown"
 
         if (lodgingType.includes("commut")) {
           // Commuting - free
-          memberCost = 0
+          expectedCost = 0
+          rateCategory = "Commuting"
         } else if (age <= 5) {
           // 0-5 free
-          memberCost = rateMap["child_0_5"] || 0
+          expectedCost = rateMap["child_0_5"] || 0
+          rateCategory = "0-5 Years (Free)"
         } else if (age <= 11) {
           // 6-11
           if (lodgingType.includes("motel")) {
-            memberCost = rateMap["child_6_11_motel"] || 81
+            expectedCost = rateMap["child_6_11_motel"] || 81
+            rateCategory = "6-11 Motel"
           } else if (lodgingType.includes("rv")) {
-            memberCost = rateMap["child_6_11_rv"] || 81
+            expectedCost = rateMap["child_6_11_rv"] || 81
+            rateCategory = "6-11 RV"
           } else {
-            memberCost = rateMap["child_6_11_tent"] || 81
+            expectedCost = rateMap["child_6_11_tent"] || 81
+            rateCategory = "6-11 Tent"
           }
         } else if (age <= 17) {
           // 12-17
           if (lodgingType.includes("motel")) {
-            memberCost = rateMap["teen_12_17_motel"] || 163
+            expectedCost = rateMap["teen_12_17_motel"] || 163
+            rateCategory = "12-17 Motel"
           } else if (lodgingType.includes("rv")) {
-            memberCost = rateMap["teen_12_17_rv"] || 163
+            expectedCost = rateMap["teen_12_17_rv"] || 163
+            rateCategory = "12-17 RV"
           } else {
-            memberCost = rateMap["teen_12_17_tent"] || 163
+            expectedCost = rateMap["teen_12_17_tent"] || 163
+            rateCategory = "12-17 Tent"
           }
         } else {
           // 18+ adult
           if (lodgingType.includes("motel")) {
-            memberCost = rateMap["adult_motel"] || 163
+            expectedCost = rateMap["adult_motel"] || 163
+            rateCategory = "Adult Motel"
           } else if (lodgingType.includes("rv")) {
-            memberCost = rateMap["adult_rv"] || 163
+            expectedCost = rateMap["adult_rv"] || 163
+            rateCategory = "Adult RV"
           } else {
-            memberCost = rateMap["adult_tent"] || 163
+            expectedCost = rateMap["adult_tent"] || 163
+            rateCategory = "Adult Tent"
           }
         }
 
-        expectedLodgingTotal += memberCost
+        expectedLodgingTotal += expectedCost
+        
+        return {
+          ...member,
+          expected_cost: expectedCost,
+          rate_category: rateCategory
+        }
       })
 
       // Old totals from database
@@ -132,7 +150,7 @@ export async function GET() {
         old_total: oldTotal,
         expected_total: expectedTotal,
         difference: difference,
-        family_members: members
+        family_members: membersWithExpected
       }
     })
 
