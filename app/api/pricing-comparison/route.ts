@@ -122,6 +122,18 @@ export async function GET() {
         }
       })
 
+      // Add site fees for RV and Tent lodging (not motel, not commuting)
+      let siteFee = 0
+      let siteFeeLabel = ""
+      if (lodgingType.includes("rv") && !lodgingType.includes("commut")) {
+        siteFee = rateMap["rv_site_4_nights"] || 390
+        siteFeeLabel = "RV Site (4 nights)"
+      } else if (lodgingType.includes("tent") && !lodgingType.includes("commut")) {
+        siteFee = rateMap["tent_site_4_nights"] || 480
+        siteFeeLabel = "Tent Site (4 nights)"
+      }
+      expectedLodgingTotal += siteFee
+
       // Old totals from database
       const oldRegFee = Number(reg.registration_fee) || 0
       const oldLodgingTotal = Number(reg.lodging_total) || 0
@@ -144,6 +156,8 @@ export async function GET() {
         expected_reg_fee: expectedRegFee,
         old_lodging_total: oldLodgingTotal,
         expected_lodging_total: expectedLodgingTotal,
+        site_fee: siteFee,
+        site_fee_label: siteFeeLabel,
         tshirt_total: tshirtTotal,
         climbing_total: climbingTotal,
         donation: donation,
