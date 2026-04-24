@@ -550,6 +550,19 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           </Link>
+
+          {/* Pricing Comparison card */}
+          <Link href="/admin/pricing-comparison">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-purple-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Pricing Comparison</CardTitle>
+                <DollarSignIcon className="size-4 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Compare old vs. expected totals</div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Stats Cards */}
