@@ -175,22 +175,52 @@ export default function RateChartPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
-                  {group.rates.map(rate => (
+                  {group.rates.map(rate => {
+                    const isDateField = rate.rate_key === "late_reg_date"
+                    
+                    // Convert YYYYMMDD to YYYY-MM-DD for date input
+                    const getDateValue = () => {
+                      const val = editedValues[rate.rate_key] || ""
+                      if (isDateField && val.length === 8) {
+                        return `${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}`
+                      }
+                      return val
+                    }
+                    
+                    // Convert YYYY-MM-DD back to YYYYMMDD for storage
+                    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                      const dateVal = e.target.value.replace(/-/g, "")
+                      setEditedValues({
+                        ...editedValues,
+                        [rate.rate_key]: dateVal
+                      })
+                    }
+                    
+                    return (
                     <div key={rate.rate_key} className="flex items-center gap-4">
                       <Label className="flex-1 min-w-[200px]">{rate.rate_name}</Label>
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">$</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={editedValues[rate.rate_key] || ""}
-                          onChange={(e) => setEditedValues({
-                            ...editedValues,
-                            [rate.rate_key]: e.target.value
-                          })}
-                          className="w-28 text-right"
-                        />
+                        {!isDateField && <span className="text-muted-foreground">$</span>}
+                        {isDateField ? (
+                          <Input
+                            type="date"
+                            value={getDateValue()}
+                            onChange={handleDateChange}
+                            className="w-40"
+                          />
+                        ) : (
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editedValues[rate.rate_key] || ""}
+                            onChange={(e) => setEditedValues({
+                              ...editedValues,
+                              [rate.rate_key]: e.target.value
+                            })}
+                            className="w-28 text-right"
+                          />
+                        )}
                         <Button
                           size="sm"
                           variant={hasChanges(rate.rate_key) ? "default" : "outline"}
@@ -209,7 +239,7 @@ export default function RateChartPage() {
                         </Button>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </CardContent>
             </Card>
