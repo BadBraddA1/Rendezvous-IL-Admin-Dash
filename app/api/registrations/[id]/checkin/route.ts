@@ -6,7 +6,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const sql = getDb()
     const { id } = await params
     const body = await request.json().catch(() => ({}))
-    const { room_keys } = body
+    const { room_keys, keys_taken_count } = body
 
     // Build the update based on whether room keys are provided
     const result = room_keys && Array.isArray(room_keys) && room_keys.length > 0
@@ -16,6 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             checked_in = TRUE,
             checked_in_at = NOW(),
             room_keys = ${room_keys},
+            keys_taken_count = ${keys_taken_count || 2},
             updated_at = NOW()
           WHERE id = ${id}
           RETURNING *

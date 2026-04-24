@@ -14,6 +14,7 @@ interface CheckedInRegistration {
   email: string
   lodging_type: string | null
   room_keys: string[] | null
+  keys_taken_count: number | null
   checked_in: boolean
   checked_in_at: string | null
   keys_returned: boolean | null
@@ -202,13 +203,29 @@ export default function CheckoutPage() {
             <CardContent className="space-y-4">
               {/* Room Keys Display */}
               <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-2">Room Keys to Return:</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium">Room Keys to Return:</p>
+                  <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
+                    {selectedFamily.keys_taken_count || 2} key{(selectedFamily.keys_taken_count || 2) !== 1 ? 's' : ''} per room
+                  </Badge>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {selectedFamily.room_keys?.map((key, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-lg font-mono px-4 py-2">
-                      {key}
-                    </Badge>
+                    <div key={idx} className="flex flex-col items-center">
+                      <Badge variant="secondary" className="text-lg font-mono px-4 py-2">
+                        {key}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground mt-1">
+                        {selectedFamily.keys_taken_count || 2} key{(selectedFamily.keys_taken_count || 2) !== 1 ? 's' : ''}
+                      </span>
+                    </div>
                   ))}
+                </div>
+                {/* Total keys calculation */}
+                <div className="mt-3 pt-3 border-t border-muted-foreground/20 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Total keys to collect: <span className="font-bold text-foreground">{(selectedFamily.room_keys?.length || 0) * (selectedFamily.keys_taken_count || 2)}</span>
+                  </p>
                 </div>
               </div>
 

@@ -23,6 +23,7 @@ export async function GET() {
         r.email,
         r.lodging_type,
         r.room_keys,
+        r.keys_taken_count,
         r.checked_in,
         r.checked_in_at,
         r.keys_returned,

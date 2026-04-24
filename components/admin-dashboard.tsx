@@ -36,6 +36,7 @@ import {
   MountainSnowIcon,
   CarIcon,
   UtensilsIcon,
+  DollarSignIcon,
 } from "lucide-react"
 import { RegistrationDialog } from "./registration-dialog"
 import { RegistrationDetailsDialog } from "./registration-details-dialog"
@@ -533,6 +534,32 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground">Easy grid view for meals</div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Rate Chart card */}
+          <Link href="/admin/rate-chart">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-green-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Rate Chart</CardTitle>
+                <DollarSignIcon className="size-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Edit pricing and fees</div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Pricing Comparison card */}
+          <Link href="/admin/pricing-comparison">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-purple-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Pricing Comparison</CardTitle>
+                <DollarSignIcon className="size-4 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Compare old vs. expected totals</div>
               </CardContent>
             </Card>
           </Link>

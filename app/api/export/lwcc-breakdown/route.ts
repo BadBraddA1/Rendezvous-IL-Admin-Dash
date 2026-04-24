@@ -63,7 +63,7 @@ export async function GET() {
     const csvRows: string[] = []
 
     // Header with meal columns
-    csvRows.push("LAST NAME,FIRST NAME,AGE,Mon D,Tue B,Tue L,Tue D,Wed B,Wed L,Wed D,Thu B,Thu L,Thu D,Fri B,Fri L,LODGING,COST,NOTES")
+    csvRows.push("LAST NAME,FIRST NAME,AGE,Mon D,Tue B,Tue L,Tue D,Wed B,Wed L,Wed D,Thu B,Thu L,Thu D,Fri B,Fri L,LODGING,COST")
 
     // Family members rows - group by reg_id to handle multiple families with same last name
     let currentRegId = -1
@@ -72,7 +72,6 @@ export async function GET() {
       currentRegId = member.reg_id
       
       const lastName = isNewFamily ? member.family_last_name : ""
-      const notes = isNewFamily && member.arrival_notes ? member.arrival_notes.replace(/"/g, '""') : ""
       const lodging = isNewFamily ? (member.lodging_type || "") : ""
       const age = member.age === null || member.age === undefined || member.age === "" || Number(member.age) >= 18 ? "adult" : member.age
       const fee = Number(member.person_cost || 0).toFixed(2)
@@ -97,21 +96,20 @@ export async function GET() {
         age,
         monD, tueB, tueL, tueD, wedB, wedL, wedD, thuB, thuL, thuD, friB, friL,
         `"${lodging}"`,
-        `$${fee}`,
-        `"${notes}"`
+        `$${fee}`
       ].join(","))
     })
 
     // Total row for lodging
     csvRows.push("")
-    csvRows.push(`"LODGING TOTAL",,,,,,,,,,,,,,,,"$${totalCost.toFixed(2)}",`)
+    csvRows.push(`"LODGING TOTAL",,,,,,,,,,,,,,,,"$${totalCost.toFixed(2)}"`)
 
     // Drive-in section
     if (driveInPasses.length > 0) {
       csvRows.push("")
       csvRows.push("")
       csvRows.push("DRIVE-IN PASSES (Meals Only)")
-      csvRows.push("FAMILY,CONTACT,PEOPLE,Mon D,Tue B,Tue L,Tue D,Wed B,Wed L,Wed D,Thu B,Thu L,Thu D,Fri B,Fri L,,,")
+      csvRows.push("FAMILY,CONTACT,PEOPLE,Mon D,Tue B,Tue L,Tue D,Wed B,Wed L,Wed D,Thu B,Thu L,Thu D,Fri B,Fri L,,")
 
       driveInPasses.forEach((pass: any) => {
         const people = (Number(pass.num_adults) || 0) + (Number(pass.num_children) || 0)
@@ -134,7 +132,6 @@ export async function GET() {
           `"Drive-In"`,
           people,
           monD, tueB, tueL, tueD, wedB, wedL, wedD, thuB, thuL, thuD, friB, friL,
-          `""`,
           `""`,
           `""`
         ].join(","))
