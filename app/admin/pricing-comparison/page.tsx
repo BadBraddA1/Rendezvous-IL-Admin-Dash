@@ -41,6 +41,8 @@ interface Comparison {
   expected_reg_fee: number
   old_lodging_total: number
   expected_lodging_total: number
+  site_fee: number
+  site_fee_label: string
   tshirt_total: number
   climbing_total: number
   donation: number
@@ -444,13 +446,18 @@ export default function PricingComparisonPage() {
                                   <p className="text-gray-500">Old: {formatCurrency(comp.old_reg_fee)}</p>
                                   <p className="text-blue-600 font-medium">New: {formatCurrency(comp.expected_reg_fee)}</p>
                                 </div>
-                                <div>
-                                  <p className="text-muted-foreground text-xs">Lodging Total</p>
-                                  <p className="text-gray-500">Old: {formatCurrency(comp.old_lodging_total)}</p>
-                                  <p className="text-blue-600 font-medium">New: {formatCurrency(comp.expected_lodging_total)}</p>
-                                </div>
-                                <div>
-                                  <p className="text-muted-foreground text-xs">T-Shirts</p>
+<div>
+  <p className="text-muted-foreground text-xs">Lodging Total (incl. site fee)</p>
+  <p className="text-gray-500">Old: {formatCurrency(comp.old_lodging_total)}</p>
+  <p className="text-blue-600 font-medium">New: {formatCurrency(comp.expected_lodging_total)}</p>
+  {comp.site_fee > 0 && (
+    <p className="text-xs text-muted-foreground mt-1">
+      {comp.site_fee_label}: {formatCurrency(comp.site_fee)}
+    </p>
+  )}
+  </div>
+  <div>
+  <p className="text-muted-foreground text-xs">T-Shirts</p>
                                   <p>{formatCurrency(comp.tshirt_total)}</p>
                                 </div>
                                 <div>
