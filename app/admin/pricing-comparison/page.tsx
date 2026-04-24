@@ -121,20 +121,22 @@ export default function PricingComparisonPage() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className="border-gray-300">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Old Total</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Old Total (Database)</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{formatCurrency(totalOld)}</p>
+              <p className="text-xs text-muted-foreground">What was originally calculated</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-blue-300">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Expected Total</CardTitle>
+              <CardTitle className="text-sm font-medium text-blue-600">New Expected (Rate Chart)</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{formatCurrency(totalExpected)}</p>
+              <p className="text-2xl font-bold text-blue-600">{formatCurrency(totalExpected)}</p>
+              <p className="text-xs text-muted-foreground">Calculated from current rates</p>
             </CardContent>
           </Card>
           <Card>
@@ -185,8 +187,8 @@ export default function PricingComparisonPage() {
                       <th className="text-left p-3 font-medium">Family</th>
                       <th className="text-left p-3 font-medium">Lodging</th>
                       <th className="text-center p-3 font-medium">Members</th>
-                      <th className="text-right p-3 font-medium">Old Total</th>
-                      <th className="text-right p-3 font-medium">Expected Total</th>
+                      <th className="text-right p-3 font-medium">Old Total (DB)</th>
+                      <th className="text-right p-3 font-medium text-blue-600">New Expected (Rates)</th>
                       <th className="text-right p-3 font-medium">Difference</th>
                     </tr>
                   </thead>
@@ -217,8 +219,8 @@ export default function PricingComparisonPage() {
                             </Badge>
                           </td>
                           <td className="p-3 text-center">{comp.member_count}</td>
-                          <td className="p-3 text-right font-mono">{formatCurrency(comp.old_total)}</td>
-                          <td className="p-3 text-right font-mono">{formatCurrency(comp.expected_total)}</td>
+                          <td className="p-3 text-right font-mono text-gray-600">{formatCurrency(comp.old_total)}</td>
+                          <td className="p-3 text-right font-mono text-blue-600 font-semibold">{formatCurrency(comp.expected_total)}</td>
                           <td className="p-3 text-right">
                             <div className="flex items-center justify-end gap-1">
                               {comp.difference > 0 ? (
