@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import {
@@ -17,6 +18,8 @@ import {
   UsersIcon,
   CheckIcon,
   ZapIcon,
+  MailIcon,
+  SquareCheckIcon,
 } from "lucide-react"
 
 interface FamilyMember {
@@ -51,7 +54,8 @@ export default function PricingComparisonPage() {
   const [comparisons, setComparisons] = useState<Comparison[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
-  const [applying, setApplying] = useState<number | "all" | null>(null)
+  const [applying, setApplying] = useState<number | "all" | "selected" | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const { toast } = useToast()
 
   const fetchData = async () => {
@@ -108,6 +112,69 @@ export default function PricingComparisonPage() {
       toast({
         title: "Error",
         description: "Failed to apply rates",
+        variant: "destructive",
+      })
+    } finally {
+      setApplying(null)
+    }
+  }
+
+  const toggleSelection = (id: number) => {
+    const newSet = new Set(selectedIds)
+    if (newSet.has(id)) {
+      newSet.delete(id)
+    } else {
+      newSet.add(id)
+    }
+    setSelectedIds(newSet)
+  }
+
+  const selectAll = () => {
+    const withDifference = comparisons.filter(c => c.difference !== 0)
+    setSelectedIds(new Set(withDifference.map(c => c.id)))
+  }
+
+  const clearSelection = () => {
+    setSelectedIds(new Set())
+  }
+
+  const applySelectedRates = async () => {
+    if (selectedIds.size === 0) return
+    if (!confirm(`Apply new rates to ${selectedIds.size} selected families and update their billing?`)) return
+    
+    setApplying("selected")
+    try {
+      let successCount = 0
+      for (const id of selectedIds) {
+        const comp = comparisons.find(c => c.id === id)
+        if (!comp) continue
+        
+        const response = await fetch("/api/pricing-comparison/apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            registrationId: comp.id,
+            expectedRegFee: comp.expected_reg_fee,
+            expectedLodgingTotal: comp.expected_lodging_total,
+            memberUpdates: comp.family_members.map(fm => ({
+              id: fm.id,
+              expected_cost: fm.expected_cost
+            }))
+          })
+        })
+        if (response.ok) successCount++
+      }
+      
+      toast({
+        title: "Success",
+        description: `Applied new rates to ${successCount} families. Their email will show the updated total.`,
+      })
+      setSelectedIds(new Set())
+      fetchData()
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to apply rates to some families",
         variant: "destructive",
       })
     } finally {
@@ -187,21 +254,56 @@ export default function PricingComparisonPage() {
               <RefreshCwIcon className={`size-4 mr-2 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
-            <Button 
-              variant="default" 
-              size="sm" 
-              onClick={applyAllRates} 
-              disabled={applying === "all" || loading}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {applying === "all" ? (
-                <Loader2Icon className="size-4 mr-2 animate-spin" />
-              ) : (
-                <ZapIcon className="size-4 mr-2" />
-              )}
-              Apply All New Rates
-            </Button>
           </div>
+        </div>
+
+        {/* Selection Controls */}
+        <Card className="border-purple-200 bg-purple-50/30">
+          <CardContent className="py-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">
+                  {selectedIds.size} of {comparisons.filter(c => c.difference !== 0).length} families selected
+                </span>
+                <Button variant="outline" size="sm" onClick={selectAll} disabled={loading}>
+                  <SquareCheckIcon className="size-4 mr-1" />
+                  Select All With Diff
+                </Button>
+                <Button variant="ghost" size="sm" onClick={clearSelection} disabled={selectedIds.size === 0}>
+                  Clear
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={applySelectedRates} 
+                  disabled={applying === "selected" || selectedIds.size === 0}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {applying === "selected" ? (
+                    <Loader2Icon className="size-4 mr-2 animate-spin" />
+                  ) : (
+                    <MailIcon className="size-4 mr-2" />
+                  )}
+                  Apply to Selected & Update Email Billing ({selectedIds.size})
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={applyAllRates} 
+                  disabled={applying === "all" || loading}
+                >
+                  {applying === "all" ? (
+                    <Loader2Icon className="size-4 mr-2 animate-spin" />
+                  ) : (
+                    <ZapIcon className="size-4 mr-2" />
+                  )}
+                  Apply All
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         </div>
 
         {/* Summary Cards */}
@@ -269,6 +371,7 @@ export default function PricingComparisonPage() {
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 z-10">
                     <tr className="border-b bg-muted">
+                      <th className="text-center p-3 w-10"></th>
                       <th className="text-left p-3 font-medium">Family</th>
                       <th className="text-left p-3 font-medium">Lodging</th>
                       <th className="text-center p-3 font-medium">Members</th>
@@ -283,11 +386,20 @@ export default function PricingComparisonPage() {
                         <tr 
                           key={comp.id} 
                           className={`border-b hover:bg-muted/50 cursor-pointer ${
+                            selectedIds.has(comp.id) ? "bg-purple-100/50" :
                             comp.difference < 0 ? "bg-red-50/50" : 
                             comp.difference > 0 ? "bg-green-50/50" : ""
                           }`}
                           onClick={() => setExpandedId(expandedId === comp.id ? null : comp.id)}
                         >
+                          <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedIds.has(comp.id)}
+                              onCheckedChange={() => toggleSelection(comp.id)}
+                              disabled={comp.difference === 0}
+                              className={comp.difference === 0 ? "opacity-30" : ""}
+                            />
+                          </td>
                           <td className="p-3">
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{comp.family_last_name}</span>
@@ -326,7 +438,7 @@ export default function PricingComparisonPage() {
                         </tr>
                         {expandedId === comp.id && (
                           <tr className="bg-muted/30">
-                            <td colSpan={6} className="p-4">
+                            <td colSpan={7} className="p-4">
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
                                 <div>
                                   <p className="text-muted-foreground text-xs">Reg Fee</p>
