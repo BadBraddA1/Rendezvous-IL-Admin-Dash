@@ -563,6 +563,19 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           </Link>
+
+          {/* Pricing Editor card */}
+          <Link href="/admin/pricing-editor">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-blue-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Pricing Editor</CardTitle>
+                <DollarSignIcon className="size-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Set individual rates per person</div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Stats Cards */}
