@@ -306,7 +306,31 @@ export default function LessonsPage() {
   }
 
   const exportSpeakers = () => {
-    window.open("/api/lessons/email-speakers", "_blank")
+    const speakers = presenters.filter(p => p.claimed_lesson_id && p.submitted_at)
+    if (speakers.length === 0) return
+
+    const rows = speakers.map(p => {
+      const topic = topics.find(t => t.id === p.claimed_lesson_id)
+      return {
+        name: p.volunteer_name,
+        email: p.email,
+        topic: topic?.title || p.claimed_topic_title || ""
+      }
+    })
+
+    const csvHeader = "Name,Email,Topic"
+    const csvRows = rows.map(r =>
+      `"${r.name.replace(/"/g, '""')}","${r.email.replace(/"/g, '""')}","${r.topic.replace(/"/g, '""')}"`
+    )
+    const csv = [csvHeader, ...csvRows].join("\n")
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "lesson-speakers.csv"
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   // ---------- Derived stats ----------
