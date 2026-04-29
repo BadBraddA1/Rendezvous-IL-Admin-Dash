@@ -31,6 +31,8 @@ import {
   LinkIcon,
   TrophyIcon,
   BellIcon,
+  DownloadIcon,
+  FileTextIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -83,6 +85,7 @@ export default function LessonsPage() {
   const [loadingPresenters, setLoadingPresenters] = useState(true)
   const [sendingInvites, setSendingInvites] = useState(false)
   const [sendingReminders, setSendingReminders] = useState(false)
+  const [sendingSpeakerEmails, setSendingSpeakerEmails] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
   // Topic dialog
@@ -240,6 +243,32 @@ export default function LessonsPage() {
     } finally {
       setSendingReminders(false)
     }
+  }
+
+  const emailSpeakers = async () => {
+    const speakers = presenters.filter((p) => p.submitted_at && p.claimed_lesson_id)
+    if (speakers.length === 0) {
+      toast({ title: "No speakers to email", description: "No one has claimed a topic yet." })
+      return
+    }
+    if (!confirm(`Send lesson title & Scripture reading request to ${speakers.length} speaker(s)?`)) return
+    
+    setSendingSpeakerEmails(true)
+    try {
+      const res = await fetch("/api/lessons/email-speakers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      })
+      const data = await res.json()
+      toast({ title: data.message ?? data.error })
+    } finally {
+      setSendingSpeakerEmails(false)
+    }
+  }
+
+  const exportSpeakers = () => {
+    window.open("/api/lessons/email-speakers", "_blank")
   }
 
   // ---------- Derived stats ----------
@@ -493,6 +522,34 @@ export default function LessonsPage() {
 
           {/* ---- BIDS & ASSIGN TAB ---- */}
           <TabsContent value="bids" className="mt-6 space-y-4">
+            {/* Speaker Actions */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-sm text-muted-foreground">
+                {submitted.length} speaker{submitted.length !== 1 ? "s" : ""} have claimed topics
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={exportSpeakers}
+                  disabled={submitted.length === 0}
+                  className="gap-1"
+                >
+                  <DownloadIcon className="size-3" />
+                  Export for Resend
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={emailSpeakers}
+                  disabled={sendingSpeakerEmails || submitted.length === 0}
+                  className="gap-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  {sendingSpeakerEmails ? <Loader2Icon className="size-3 animate-spin" /> : <FileTextIcon className="size-3" />}
+                  Email All Speakers
+                </Button>
+              </div>
+            </div>
+
             {topics.length === 0 ? (
               <div className="text-center py-16 border-2 border-dashed rounded-xl text-muted-foreground space-y-2">
                 <TrophyIcon className="size-10 mx-auto opacity-40" />
