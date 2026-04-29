@@ -94,7 +94,7 @@ export default function SubmitLessonPage() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-sm text-muted-foreground">
-              If you need help, text Stephen at <a href="sms:+16185812180" className="text-amber-700 underline">(618) 581-2180</a>
+              If you need help, contact Stephen at <a href="mailto:Stephen@Bradd.us" className="text-amber-700 underline">Stephen@Bradd.us</a> or text <a href="sms:+12179355058" className="text-amber-700 underline">(217) 935-5058</a>
             </p>
           </CardContent>
         </Card>
@@ -218,7 +218,7 @@ export default function SubmitLessonPage() {
         {/* Contact */}
         <p className="text-center text-sm text-muted-foreground">
           Questions? Text Stephen at{" "}
-          <a href="sms:+16185812180" className="text-amber-700 underline">(618) 581-2180</a>
+          <a href="mailto:Stephen@Bradd.us" className="text-amber-700 underline">Stephen@Bradd.us</a> or text <a href="sms:+12179355058" className="text-amber-700 underline">(217) 935-5058</a>
         </p>
       </div>
     </div>

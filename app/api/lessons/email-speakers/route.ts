@@ -161,7 +161,7 @@ function buildSpeakerEmailHtml(name: string, topicTitle: string, token: string, 
             <tr><td style="padding:16px;">
               <p style="color:#92400e;font-size:14px;margin:0;">
                 <strong>Questions?</strong> Contact Stephen directly:<br/>
-                <a href="mailto:stephen@rendezvousil.org" style="color:#2563eb;">stephen@rendezvousil.org</a> or text <a href="sms:+13097124234" style="color:#2563eb;">(309) 712-4234</a>
+                <a href="mailto:Stephen@Bradd.us" style="color:#2563eb;">Stephen@Bradd.us</a> or text <a href="sms:+12179355058" style="color:#2563eb;">(217) 935-5058</a>
               </p>
             </td></tr>
           </table>

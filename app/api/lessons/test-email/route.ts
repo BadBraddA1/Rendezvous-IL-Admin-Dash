@@ -19,34 +19,25 @@ function getBaseUrl(request: NextRequest): string {
 
 // POST — send a TEST lesson invite email to a specified email address
 export async function POST(request: NextRequest) {
-  console.log("[v0] test-email route called")
-  
   let body
   try {
     body = await request.json()
-    console.log("[v0] test-email body:", body)
-  } catch (e) {
-    console.log("[v0] test-email JSON parse error:", e)
+  } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
   }
   
   const { testEmail, emailType } = body
   const baseUrl = getBaseUrl(request)
-  console.log("[v0] test-email baseUrl:", baseUrl)
-  
   const sql = getDb()
 
   if (!testEmail) {
-    console.log("[v0] test-email missing testEmail")
     return NextResponse.json({ error: "testEmail is required" }, { status: 400 })
   }
 
   let resend
   try {
     resend = getResend()
-    console.log("[v0] test-email resend initialized")
   } catch (e: any) {
-    console.log("[v0] test-email resend error:", e.message)
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
 
@@ -75,14 +66,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    console.log("[v0] test-email sending to:", testEmail, "type:", emailType)
     const result = await resend.emails.send({
       from: "Rendezvous 2026 <noreply@mail.rendezvousil.org>",
       to: testEmail,
       subject,
       html,
     })
-    console.log("[v0] test-email sent successfully:", result.data?.id)
 
     return NextResponse.json({
       success: true,
@@ -94,7 +83,6 @@ export async function POST(request: NextRequest) {
         : `The link in the email won't work for claiming (it's a test token), but you can see how the email looks.`
     })
   } catch (err: any) {
-    console.log("[v0] test-email send error:", err.message, err)
     return NextResponse.json({ 
       error: err.message || "Failed to send email",
       details: err
@@ -274,7 +262,7 @@ function buildSpeakerEmailHtml(name: string, topicTitle: string, submitUrl: stri
             <tr><td style="padding:16px;">
               <p style="color:#92400e;font-size:14px;margin:0;">
                 <strong>Questions?</strong> Contact Stephen directly:<br/>
-                <a href="mailto:stephen@rendezvousil.org" style="color:#2563eb;">stephen@rendezvousil.org</a> or text <a href="sms:+13097124234" style="color:#2563eb;">(309) 712-4234</a>
+                <a href="mailto:Stephen@Bradd.us" style="color:#2563eb;">Stephen@Bradd.us</a> or text <a href="sms:+12179355058" style="color:#2563eb;">(217) 935-5058</a>
               </p>
             </td></tr>
           </table>
