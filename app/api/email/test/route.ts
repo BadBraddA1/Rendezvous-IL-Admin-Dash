@@ -85,7 +85,15 @@ export function buildCustomEmailHtml(message: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { testEmail, emailType, subject, message } = body
+    const { testEmail, emailType, subject, message, dryRun } = body
+
+    // For dry-run API status checks, just verify the API key exists
+    if (dryRun) {
+      if (!process.env.Resend_API) {
+        return NextResponse.json({ error: "Resend_API environment variable is not set" }, { status: 500 })
+      }
+      return NextResponse.json({ status: "configured" })
+    }
 
     if (!testEmail) {
       return NextResponse.json({ error: "Test email address is required" }, { status: 400 })
