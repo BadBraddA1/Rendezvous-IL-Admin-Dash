@@ -1,6 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { getResend } from "@/lib/email"
+import { Resend } from "resend"
+
+function getResend() {
+  if (!process.env.Resend_API) {
+    throw new Error("Resend_API environment variable is not set")
+  }
+  return new Resend(process.env.Resend_API)
+}
 
 function getBaseUrl(request: NextRequest): string {
   const envUrl = process.env.NEXT_PUBLIC_BASE_URL
