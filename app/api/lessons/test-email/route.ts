@@ -65,8 +65,9 @@ export async function POST(request: NextRequest) {
     subject = "[TEST] Reminder: Claim Your Lesson Topic – Deadline April 8th"
     html = buildReminderHtml("Test User", pickUrl)
   } else if (emailType === "speaker") {
+    const submitUrl = `${baseUrl}/lessons/submit?token=${mockToken}`
     subject = "[TEST] Action Required: Submit Your Lesson Title & Scripture Reading – Rendezvous 2026"
-    html = buildSpeakerEmailHtml("Test User", "Sample Topic: Walking by Faith")
+    html = buildSpeakerEmailHtml("Test User", "Sample Topic: Walking by Faith", submitUrl)
   } else {
     // Default: invite email
     subject = "[TEST] Claim Your Lesson Topic – Rendezvous 2026"
@@ -206,7 +207,7 @@ function buildReminderHtml(name: string, pickUrl: string): string {
 </body></html>`
 }
 
-function buildSpeakerEmailHtml(name: string, topicTitle: string): string {
+function buildSpeakerEmailHtml(name: string, topicTitle: string, submitUrl: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
@@ -241,7 +242,7 @@ function buildSpeakerEmailHtml(name: string, topicTitle: string): string {
           </table>
 
           <p style="color:#555;font-size:15px;line-height:1.6;">
-            To help us prepare for the event, please reply to this email with:
+            To help us prepare for the event, please submit the following:
           </p>
           
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#e8f4fd;border:1px solid #93c5fd;border-radius:8px;margin:20px 0;">
@@ -257,9 +258,26 @@ function buildSpeakerEmailHtml(name: string, topicTitle: string): string {
             </td></tr>
           </table>
 
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+            <tr><td align="center">
+              <a href="${submitUrl}" style="display:inline-block;background:#8B4513;color:#fff;padding:14px 32px;font-size:16px;font-weight:bold;text-decoration:none;border-radius:8px;">
+                Submit Your Lesson Details
+              </a>
+            </td></tr>
+          </table>
+          
           <p style="color:#555;font-size:15px;line-height:1.6;">
-            Simply <strong>reply to this email</strong> with your lesson title and Scripture reading, and we'll take care of the rest.
+            Or copy this link: <a href="${submitUrl}" style="color:#2563eb;">${submitUrl}</a>
           </p>
+          
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;margin:20px 0;">
+            <tr><td style="padding:16px;">
+              <p style="color:#92400e;font-size:14px;margin:0;">
+                <strong>Questions?</strong> Contact Stephen directly:<br/>
+                <a href="mailto:stephen@rendezvousil.org" style="color:#2563eb;">stephen@rendezvousil.org</a> or text <a href="sms:+13097124234" style="color:#2563eb;">(309) 712-4234</a>
+              </p>
+            </td></tr>
+          </table>
 
           <p style="color:#555;font-size:15px;line-height:1.6;margin-top:24px;">
             We're looking forward to hearing your message at Rendezvous 2026!

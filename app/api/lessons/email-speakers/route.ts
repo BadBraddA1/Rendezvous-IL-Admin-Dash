@@ -2,16 +2,25 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { sendBatch } from "@/lib/email"
 
+function getBaseUrl(request: NextRequest): string {
+  const envUrl = process.env.NEXT_PUBLIC_BASE_URL
+  if (envUrl) return envUrl.replace(/\/$/, "")
+  const host = request.headers.get("host") || "localhost:3000"
+  const protocol = host.includes("localhost") ? "http" : "https"
+  return `${protocol}://${host}`
+}
+
 // POST — send email to all speakers who have claimed a topic
 export async function POST(request: NextRequest) {
   const sql = getDb()
   const body = await request.json().catch(() => ({}))
   const { volunteerIds } = body
+  const baseUrl = getBaseUrl(request)
 
   // Get speakers who have claimed a topic (have a claimed_lesson_id)
   const speakers = volunteerIds?.length
     ? await sql`
-        SELECT vs.id, vs.volunteer_name, vs.claimed_lesson_id, lt.title as topic_title, r.email
+        SELECT vs.id, vs.volunteer_name, vs.claimed_lesson_id, vs.lesson_bid_token, lt.title as topic_title, r.email
         FROM volunteer_signups vs
         JOIN registrations r ON r.id = vs.registration_id
         LEFT JOIN lesson_topics lt ON lt.id = vs.claimed_lesson_id
@@ -19,7 +28,7 @@ export async function POST(request: NextRequest) {
           AND vs.claimed_lesson_id IS NOT NULL
       `
     : await sql`
-        SELECT vs.id, vs.volunteer_name, vs.claimed_lesson_id, lt.title as topic_title, r.email
+        SELECT vs.id, vs.volunteer_name, vs.claimed_lesson_id, vs.lesson_bid_token, lt.title as topic_title, r.email
         FROM volunteer_signups vs
         JOIN registrations r ON r.id = vs.registration_id
         LEFT JOIN lesson_topics lt ON lt.id = vs.claimed_lesson_id
@@ -33,7 +42,7 @@ export async function POST(request: NextRequest) {
   const payloads = speakers.map((speaker: any) => ({
     to: speaker.email,
     subject: "Action Required: Submit Your Lesson Title & Scripture Reading – Rendezvous 2026",
-    html: buildSpeakerEmailHtml(speaker.volunteer_name, speaker.topic_title),
+    html: buildSpeakerEmailHtml(speaker.volunteer_name, speaker.topic_title, speaker.lesson_bid_token, baseUrl),
   }))
 
   const results = await sendBatch(payloads)
@@ -86,7 +95,9 @@ export async function GET() {
   })
 }
 
-function buildSpeakerEmailHtml(name: string, topicTitle: string): string {
+function buildSpeakerEmailHtml(name: string, topicTitle: string, token: string, baseUrl: string): string {
+  const submitUrl = `${baseUrl}/lessons/submit?token=${token}`
+  
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
@@ -118,7 +129,7 @@ function buildSpeakerEmailHtml(name: string, topicTitle: string): string {
           </table>
 
           <p style="color:#555;font-size:15px;line-height:1.6;">
-            To help us prepare for the event, please reply to this email with:
+            To help us prepare for the event, please submit the following:
           </p>
           
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#e8f4fd;border:1px solid #93c5fd;border-radius:8px;margin:20px 0;">
@@ -134,9 +145,26 @@ function buildSpeakerEmailHtml(name: string, topicTitle: string): string {
             </td></tr>
           </table>
 
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+            <tr><td align="center">
+              <a href="${submitUrl}" style="display:inline-block;background:#8B4513;color:#fff;padding:14px 32px;font-size:16px;font-weight:bold;text-decoration:none;border-radius:8px;">
+                Submit Your Lesson Details
+              </a>
+            </td></tr>
+          </table>
+          
           <p style="color:#555;font-size:15px;line-height:1.6;">
-            Simply <strong>reply to this email</strong> with your lesson title and Scripture reading, and we'll take care of the rest.
+            Or copy this link: <a href="${submitUrl}" style="color:#2563eb;">${submitUrl}</a>
           </p>
+          
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;margin:20px 0;">
+            <tr><td style="padding:16px;">
+              <p style="color:#92400e;font-size:14px;margin:0;">
+                <strong>Questions?</strong> Contact Stephen directly:<br/>
+                <a href="mailto:stephen@rendezvousil.org" style="color:#2563eb;">stephen@rendezvousil.org</a> or text <a href="sms:+13097124234" style="color:#2563eb;">(309) 712-4234</a>
+              </p>
+            </td></tr>
+          </table>
 
           <p style="color:#555;font-size:15px;line-height:1.6;margin-top:24px;">
             We're looking forward to hearing your message at Rendezvous 2026!
