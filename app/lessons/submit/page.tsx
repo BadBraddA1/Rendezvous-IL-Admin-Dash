@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,18 @@ interface SpeakerData {
 }
 
 export default function SubmitLessonPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-amber-700" />
+      </div>
+    }>
+      <SubmitLessonContent />
+    </Suspense>
+  )
+}
+
+function SubmitLessonContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
   
