@@ -152,10 +152,22 @@ export default function EmailPage() {
       const data = await response.json()
       if (response.ok) {
         toast({ title: "Test SMS Sent", description: data.message })
-        addTestResult("success", `SMS sent to ${testPhone}`, { messageId: data.messageId })
+        addTestResult("success", `SMS sent to ${testPhone}`, { 
+          messageId: data.messageId,
+          httpStatus: data.debug?.httpStatus,
+          phoneSent: data.debug?.phoneSent,
+          sender: data.debug?.sender,
+          infobipResponse: data.debug?.rawResponse,
+        })
       } else {
         toast({ title: "Error", description: data.error || "Failed to send SMS", variant: "destructive" })
-        addTestResult("error", data.error || "Failed to send SMS", { response: data })
+        addTestResult("error", data.error || "Failed to send SMS", {
+          httpStatus: data.debug?.httpStatus,
+          phoneSent: data.debug?.phoneSent,
+          sender: data.debug?.sender,
+          infobipResponse: data.debug?.rawResponse,
+          requestPayload: data.debug?.requestPayload,
+        })
       }
     } catch (err: any) {
       toast({ title: "Error", description: "Failed to send SMS", variant: "destructive" })

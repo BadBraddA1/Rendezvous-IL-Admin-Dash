@@ -35,7 +35,20 @@ function getInfobipConfig(): InfobipConfig {
   return { apiKey, baseUrl, sender }
 }
 
-export async function sendSMS(to: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+export interface SMSResult {
+  success: boolean
+  messageId?: string
+  error?: string
+  debug: {
+    httpStatus?: number
+    phoneSent?: string
+    sender?: string
+    rawResponse?: any
+    requestPayload?: any
+  }
+}
+
+export async function sendSMS(to: string, message: string): Promise<SMSResult> {
   const config = getInfobipConfig()
   
   // Normalize phone number - ensure it starts with country code
@@ -72,17 +85,46 @@ export async function sendSMS(to: string, message: string): Promise<{ success: b
 
     const data = await response.json()
 
+    const debug = {
+      httpStatus: response.status,
+      phoneSent: phone,
+      sender: config.sender,
+      rawResponse: data,
+      requestPayload: payload,
+    }
+
     if (!response.ok) {
       return {
         success: false,
         error: data.requestError?.serviceException?.text || data.message || `HTTP ${response.status}`,
+        debug,
       }
     }
 
     const messageId = data.messages?.[0]?.messageId
-    return { success: true, messageId }
+    const messageStatus = data.messages?.[0]?.status
+    
+    return { 
+      success: true, 
+      messageId,
+      debug: {
+        ...debug,
+        rawResponse: {
+          ...data,
+          messageStatus,
+        }
+      }
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || "Network error" }
+    return { 
+      success: false, 
+      error: err.message || "Network error",
+      debug: {
+        phoneSent: phone,
+        sender: config.sender,
+        requestPayload: payload,
+      }
+    }
   }
 }
 

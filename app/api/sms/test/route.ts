@@ -31,9 +31,13 @@ export async function POST(request: NextRequest) {
         success: true,
         message: `Test SMS sent to ${phone}`,
         messageId: result.messageId,
+        debug: result.debug,
       })
     } else {
-      return NextResponse.json({ error: result.error }, { status: 500 })
+      return NextResponse.json({ 
+        error: result.error,
+        debug: result.debug,
+      }, { status: 500 })
     }
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to send SMS" }, { status: 500 })
