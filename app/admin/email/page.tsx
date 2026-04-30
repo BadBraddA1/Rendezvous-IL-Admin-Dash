@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Mail, Send, QrCode, FlaskConical, Eye, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Info } from "lucide-react"
+import { Loader2, Mail, Send, QrCode, FlaskConical, Eye, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Info, MessageSquare } from "lucide-react"
 import Link from "next/link"
 
 interface TestResult {
@@ -29,6 +29,10 @@ export default function EmailPage() {
   const [previewHtml, setPreviewHtml] = useState("")
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [apiStatus, setApiStatus] = useState<"checking" | "configured" | "missing">("checking")
+  const [smsApiStatus, setSmsApiStatus] = useState<"checking" | "configured" | "missing">("checking")
+  const [testPhone, setTestPhone] = useState("")
+  const [testSmsMessage, setTestSmsMessage] = useState("This is a test SMS from Rendezvous 2026!")
+  const [sendingSms, setSendingSms] = useState(false)
   const { toast } = useToast()
 
   // Check if Resend API is configured
@@ -47,6 +51,22 @@ export default function EmailPage() {
         }
       })
       .catch(() => setApiStatus("missing"))
+
+    // Check if Infobip SMS API is configured
+    fetch("/api/sms/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dryRun: true }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.status === "configured") {
+          setSmsApiStatus("configured")
+        } else {
+          setSmsApiStatus("missing")
+        }
+      })
+      .catch(() => setSmsApiStatus("missing"))
   }, [])
 
   useEffect(() => {
@@ -106,6 +126,42 @@ export default function EmailPage() {
       addTestResult("error", `Network error: ${err.message || "Unknown error"}`)
     } finally {
       setSendingTest(false)
+    }
+  }
+
+  const handleSendTestSms = async () => {
+    if (!testPhone) {
+      toast({ title: "Phone Required", description: "Please enter a phone number", variant: "destructive" })
+      addTestResult("error", "No phone number provided")
+      return
+    }
+    if (!testSmsMessage) {
+      toast({ title: "Message Required", description: "Please enter a message", variant: "destructive" })
+      addTestResult("error", "No message provided")
+      return
+    }
+    setSendingSms(true)
+    addTestResult("pending", `Sending test SMS to ${testPhone}...`)
+    
+    try {
+      const response = await fetch("/api/sms/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: testPhone, message: testSmsMessage }),
+      })
+      const data = await response.json()
+      if (response.ok) {
+        toast({ title: "Test SMS Sent", description: data.message })
+        addTestResult("success", `SMS sent to ${testPhone}`, { messageId: data.messageId })
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to send SMS", variant: "destructive" })
+        addTestResult("error", data.error || "Failed to send SMS", { response: data })
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: "Failed to send SMS", variant: "destructive" })
+      addTestResult("error", `Network error: ${err.message || "Unknown error"}`)
+    } finally {
+      setSendingSms(false)
     }
   }
 
@@ -207,6 +263,10 @@ export default function EmailPage() {
           <TabsTrigger value="custom" className="gap-2">
             <Mail className="size-4" />
             Custom Email
+          </TabsTrigger>
+          <TabsTrigger value="sms" className="gap-2">
+            <MessageSquare className="size-4" />
+            Test SMS
           </TabsTrigger>
         </TabsList>
 
@@ -496,6 +556,117 @@ export default function EmailPage() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* SMS Test Tab */}
+        <TabsContent value="sms">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="size-5" />
+                      Test SMS (Infobip)
+                    </CardTitle>
+                    <CardDescription>
+                      Send a test SMS to verify your Infobip integration is working
+                    </CardDescription>
+                  </div>
+                  {smsApiStatus === "checking" && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin" />
+                    </div>
+                  )}
+                  {smsApiStatus === "configured" && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
+                      <CheckCircle2 className="size-4" />
+                      Connected
+                    </div>
+                  )}
+                  {smsApiStatus === "missing" && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-1.5 rounded-full">
+                      <XCircle className="size-4" />
+                      Not Configured
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="testPhone">Phone Number</Label>
+                  <Input
+                    id="testPhone"
+                    type="tel"
+                    value={testPhone}
+                    onChange={(e) => setTestPhone(e.target.value)}
+                    placeholder="(217) 935-5058"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter your phone number to receive the test SMS
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="testSmsMsg">Message</Label>
+                  <Textarea
+                    id="testSmsMsg"
+                    value={testSmsMessage}
+                    onChange={(e) => setTestSmsMessage(e.target.value)}
+                    placeholder="Enter test message..."
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Message will be prefixed with [TEST] when sent
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleSendTestSms} 
+                  disabled={sendingSms || smsApiStatus !== "configured"} 
+                  className="w-full"
+                >
+                  {sendingSms ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="mr-2 size-4" />
+                      Send Test SMS
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-blue-200 bg-blue-50/50">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2 text-blue-800">
+                  <Info className="size-4" />
+                  About SMS Integration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-blue-900 space-y-3">
+                <p>
+                  SMS messages are sent via <strong>Infobip</strong>. The integration requires:
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li><code className="bg-blue-100 px-1 rounded">infobip</code> environment variable (API key or JSON config)</li>
+                  <li>Optional: <code className="bg-blue-100 px-1 rounded">INFOBIP_BASE_URL</code> (defaults to api.infobip.com)</li>
+                  <li>Optional: <code className="bg-blue-100 px-1 rounded">INFOBIP_SENDER</code> (defaults to &quot;Rendezvous&quot;)</li>
+                </ul>
+                <div className="pt-3 border-t border-blue-200">
+                  <p className="font-medium mb-1">Use Cases:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 text-blue-800">
+                    <li>Event reminders and updates</li>
+                    <li>Check-in notifications</li>
+                    <li>Emergency communications</li>
+                    <li>Payment reminders</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
