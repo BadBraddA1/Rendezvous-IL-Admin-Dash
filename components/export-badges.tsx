@@ -142,3 +142,23 @@ export async function handleExportContactInfo() {
     alert("Failed to export contact information")
   }
 }
+
+export async function handleExportAttendees() {
+  try {
+    const response = await fetch("/api/export/attendees")
+    if (!response.ok) throw new Error("Failed to export")
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `rendezvous-2026-attendees-${new Date().toISOString().split("T")[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  } catch (error) {
+    console.error("Error exporting attendees:", error)
+    alert("Failed to export attendees list")
+  }
+}
