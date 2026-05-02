@@ -18,8 +18,7 @@ import {
   RefreshCwIcon,
   CheckCircle2Icon,
   XCircleIcon,
-  CalendarIcon,
-  UsersIcon
+  CalendarIcon
 } from "lucide-react"
 import Link from "next/link"
 
@@ -209,6 +208,31 @@ export default function AssignmentsPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button 
+              variant="default"
+              onClick={async () => {
+                if (!confirm("This will clear existing assignments and import the 2026 activity data. Continue?")) return
+                setImporting(true)
+                try {
+                  const res = await fetch("/api/assignments/import-2026", { method: "POST" })
+                  const data = await res.json()
+                  if (res.ok) {
+                    toast({ title: "Import Complete", description: data.message })
+                    fetchAssignments()
+                  } else {
+                    toast({ title: "Import Failed", description: data.error, variant: "destructive" })
+                  }
+                } catch (err: any) {
+                  toast({ title: "Error", description: err.message, variant: "destructive" })
+                } finally {
+                  setImporting(false)
+                }
+              }}
+              disabled={importing}
+            >
+              {importing ? <Loader2Icon className="size-4 mr-2 animate-spin" /> : <UploadIcon className="size-4 mr-2" />}
+              Import 2026 Data
+            </Button>
             <Button variant="outline" onClick={handleRematch} disabled={rematching || unmatchedCount === 0}>
               {rematching ? <Loader2Icon className="size-4 mr-2 animate-spin" /> : <RefreshCwIcon className="size-4 mr-2" />}
               Rematch Names
