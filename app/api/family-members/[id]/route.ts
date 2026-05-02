@@ -38,6 +38,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Family member not found" }, { status: 404 })
     }
 
+    // Auto-update lodging_total on the registration
+    const registrationId = result[0].registration_id
+    await sql`
+      UPDATE registrations
+      SET lodging_total = (
+        SELECT COALESCE(SUM(COALESCE(person_cost, 0)), 0)
+        FROM family_members
+        WHERE registration_id = ${registrationId}
+      ),
+      updated_at = NOW()
+      WHERE id = ${registrationId}
+    `
+
     return NextResponse.json(serializeRow(result[0]))
   } catch (error) {
     console.error("[v0] Error updating family member:", error)
@@ -50,9 +63,29 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params
     const sql = getDb()
 
+    // Get registration_id before deleting
+    const member = await sql`
+      SELECT registration_id FROM family_members WHERE id = ${id}
+    `
+    const registrationId = member[0]?.registration_id
+
     await sql`
       DELETE FROM family_members WHERE id = ${id}
     `
+
+    // Auto-update lodging_total on the registration
+    if (registrationId) {
+      await sql`
+        UPDATE registrations
+        SET lodging_total = (
+          SELECT COALESCE(SUM(COALESCE(person_cost, 0)), 0)
+          FROM family_members
+          WHERE registration_id = ${registrationId}
+        ),
+        updated_at = NOW()
+        WHERE id = ${registrationId}
+      `
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

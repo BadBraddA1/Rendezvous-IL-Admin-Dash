@@ -31,6 +31,18 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `
 
+    // Auto-update lodging_total on the registration
+    await sql`
+      UPDATE registrations
+      SET lodging_total = (
+        SELECT COALESCE(SUM(COALESCE(person_cost, 0)), 0)
+        FROM family_members
+        WHERE registration_id = ${registration_id}
+      ),
+      updated_at = NOW()
+      WHERE id = ${registration_id}
+    `
+
     return NextResponse.json(serializeRow(result[0]))
   } catch (error) {
     console.error("[v0] Error creating family member:", error)

@@ -729,8 +729,6 @@ export function AdminDashboard() {
                     filteredRegistrations.map((registration) => {
 const regFee = Number(registration.registration_fee) || 0
                   const lodgingTotal = Number(registration.lodging_total) || 0
-                  const calculatedLodging = Number(registration.calculated_lodging_total) || 0
-                  const lodgingMismatch = Math.abs(lodgingTotal - calculatedLodging) > 0.01
                   const tshirtTotal = Number(registration.tshirt_total) || 0
                   const adventureTotal = Number(registration.climbing_tower_total) || 0
                   const donation = Number(registration.scholarship_donation) || 0
@@ -764,12 +762,6 @@ const regFee = Number(registration.registration_fee) || 0
                               <Badge variant="outline" className="text-xs">{abbreviateLodging(registration.lodging_type)}</Badge>
                               {lodgingTotal > 0 && (
                                 <div className="text-xs text-muted-foreground mt-1">${lodgingTotal.toFixed(2)}</div>
-                              )}
-                              {lodgingMismatch && (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <AlertCircleIcon className="size-3 text-amber-500" />
-                                  <span className="text-[10px] text-amber-600">Calc: ${calculatedLodging.toFixed(2)}</span>
-                                </div>
                               )}
                             </div>
                           </TableCell>
