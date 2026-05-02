@@ -4,8 +4,11 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MountainSnowIcon, ArrowLeftIcon, UsersIcon, PhoneIcon, DollarSignIcon } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { MountainSnowIcon, ArrowLeftIcon, UsersIcon, PhoneIcon, DollarSignIcon, AlertTriangleIcon, Loader2Icon } from "lucide-react"
 import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
 
 interface AdventureRegistration {
   id: number
@@ -24,6 +27,67 @@ export default function AdventurePage() {
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [adventureEnabled, setAdventureEnabled] = useState<boolean | null>(null)
+  const [togglingAdventure, setTogglingAdventure] = useState(false)
+  const [zeroingOut, setZeroingOut] = useState(false)
+  const { toast } = useToast()
+
+  // Fetch adventure enabled setting
+  useEffect(() => {
+    fetch("/api/settings/adventure")
+      .then((r) => r.json())
+      .then((data) => setAdventureEnabled(data.enabled))
+      .catch(() => setAdventureEnabled(false))
+  }, [])
+
+  const handleToggleAdventure = async (enabled: boolean) => {
+    setTogglingAdventure(true)
+    try {
+      const res = await fetch("/api/settings/adventure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      })
+      if (res.ok) {
+        setAdventureEnabled(enabled)
+        toast({
+          title: enabled ? "Adventure Activities Enabled" : "Adventure Activities Disabled",
+          description: enabled 
+            ? "Adventure costs will be included in totals." 
+            : "Adventure costs will be excluded from totals. Run 'Zero Out' to remove from registrations.",
+        })
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to update setting", variant: "destructive" })
+    } finally {
+      setTogglingAdventure(false)
+    }
+  }
+
+  const handleZeroOutAdventure = async () => {
+    if (!confirm("This will set climbing_tower_total to $0 for ALL registrations. This cannot be undone. Are you sure?")) return
+    
+    setZeroingOut(true)
+    try {
+      const res = await fetch("/api/registrations/adventure/zero-out", { method: "POST" })
+      const data = await res.json()
+      if (res.ok) {
+        toast({ 
+          title: "Adventure Totals Zeroed Out", 
+          description: `Updated ${data.updated} registration(s). Total removed: $${data.totalRemoved.toFixed(2)}` 
+        })
+        // Refresh the list
+        setRegistrations([])
+        setTotalRevenue(0)
+      } else {
+        toast({ title: "Error", description: data.error, variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to zero out adventure totals", variant: "destructive" })
+    } finally {
+      setZeroingOut(false)
+    }
+  }
 
   useEffect(() => {
     fetch("/api/registrations/adventure")
@@ -66,6 +130,37 @@ export default function AdventurePage() {
               </div>
             </div>
 
+            {/* Adventure Toggle */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    id="adventure-toggle"
+                    checked={adventureEnabled ?? false}
+                    onCheckedChange={handleToggleAdventure}
+                    disabled={togglingAdventure || adventureEnabled === null}
+                  />
+                  <Label htmlFor="adventure-toggle" className="text-sm font-medium">
+                    {adventureEnabled ? "Enabled" : "Disabled"}
+                  </Label>
+                </div>
+                {adventureEnabled === false && (
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={handleZeroOutAdventure}
+                    disabled={zeroingOut || registrations.length === 0}
+                  >
+                    {zeroingOut ? (
+                      <><Loader2Icon className="size-4 mr-1 animate-spin" />Zeroing...</>
+                    ) : (
+                      "Zero Out All"
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+
             {!loading && registrations.length > 0 && (
               <div className="flex gap-3">
                 <Card className="border-blue-200 bg-blue-50/60">
@@ -104,6 +199,22 @@ export default function AdventurePage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-3">
+        {/* Warning Banner when disabled */}
+        {adventureEnabled === false && (
+          <Card className="border-amber-300 bg-amber-50">
+            <CardContent className="py-4 flex items-center gap-3">
+              <AlertTriangleIcon className="size-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="font-medium text-amber-800">Adventure Activities are Disabled</p>
+                <p className="text-sm text-amber-700">
+                  Adventure costs are NOT being included in registration totals. 
+                  Use &quot;Zero Out All&quot; to remove existing charges from all registrations.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {loading && (
           <div className="text-center py-16 text-muted-foreground">Loading adventure registrations...</div>
         )}

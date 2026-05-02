@@ -12,6 +12,22 @@ export async function POST() {
       ADD COLUMN IF NOT EXISTS scripture_reading TEXT,
       ADD COLUMN IF NOT EXISTS lesson_details_submitted_at TIMESTAMPTZ
     `
+
+    // Create event_settings table for feature toggles
+    await sql`
+      CREATE TABLE IF NOT EXISTS event_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `
+
+    // Insert default adventure setting (disabled for this year)
+    await sql`
+      INSERT INTO event_settings (key, value) 
+      VALUES ('adventure_enabled', 'false')
+      ON CONFLICT (key) DO NOTHING
+    `
     
     return NextResponse.json({ success: true, message: "Migration complete" })
   } catch (err: any) {

@@ -35,7 +35,16 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
   const [volunteerForm, setVolunteerForm] = useState({ volunteer_name: "", volunteer_type: "" })
   const [savingVolunteer, setSavingVolunteer] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const [adventureEnabled, setAdventureEnabled] = useState<boolean | null>(null)
   const { toast } = useToast()
+
+  // Fetch adventure setting
+  useEffect(() => {
+    fetch("/api/settings/adventure")
+      .then((r) => r.json())
+      .then((data) => setAdventureEnabled(data.enabled))
+      .catch(() => setAdventureEnabled(false))
+  }, [])
 
   const fetchDetails = async () => {
     try {
@@ -352,9 +361,33 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                   <p className="text-sm font-medium text-muted-foreground">Lodging Total (Calculated)</p>
                   <p className="text-lg font-semibold">${calculatedLodgingTotal.toFixed(2)}</p>
                   {data.lodging_total !== undefined && Math.abs(Number(data.lodging_total) - calculatedLodgingTotal) > 0.01 && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      Stored: ${Number(data.lodging_total).toFixed(2)} (differs from calculated)
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-amber-600">
+                        Stored: ${Number(data.lodging_total).toFixed(2)}
+                      </p>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-6 text-xs px-2"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(`/api/registrations/${registrationId}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ lodging_total: calculatedLodgingTotal }),
+                            })
+                            if (res.ok) {
+                              toast({ title: "Updated", description: "Lodging total synced with calculated value" })
+                              fetchDetails()
+                            }
+                          } catch {
+                            toast({ title: "Error", description: "Failed to update", variant: "destructive" })
+                          }
+                        }}
+                      >
+                        Accept Calculated
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -631,6 +664,20 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                   <p className="text-sm font-medium text-muted-foreground">T-Shirt Total</p>
                   <p>${data.tshirt_total || 0}</p>
                 </div>
+                {/* Adventure Cost - show if they have any adventure charges */}
+                {Number(data.climbing_tower_total || 0) > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Adventure Activities
+                      {adventureEnabled === false && (
+                        <span className="ml-1 text-xs text-amber-600">(Disabled - not in total)</span>
+                      )}
+                    </p>
+                    <p className={adventureEnabled === false ? "text-muted-foreground line-through" : ""}>
+                      ${Number(data.climbing_tower_total || 0).toFixed(2)}
+                    </p>
+                  </div>
+                )}
                 {data.scholarship_donation > 0 && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Scholarship Donation</p>
@@ -648,7 +695,13 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Owed</p>
                   <p className="text-lg font-semibold text-primary">
-                    ${(Number(data.registration_fee || 0) + Number(data.lodging_total || 0) + Number(data.tshirt_total || 0) + Number(data.scholarship_donation || 0)).toFixed(2)}
+                    ${(
+                      Number(data.registration_fee || 0) + 
+                      Number(data.lodging_total || 0) + 
+                      Number(data.tshirt_total || 0) + 
+                      Number(data.scholarship_donation || 0) +
+                      (adventureEnabled ? Number(data.climbing_tower_total || 0) : 0)
+                    ).toFixed(2)}
                   </p>
                 </div>
                 {data.payment_notes && (
