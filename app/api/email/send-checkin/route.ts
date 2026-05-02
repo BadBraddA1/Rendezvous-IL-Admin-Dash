@@ -109,15 +109,27 @@ function buildCheckinHtml(
   let volunteerHtml = ""
   if (volunteers.length > 0) {
     const volunteerRows = volunteers.map((v) => {
-      const date = new Date(v.assigned_date + "T12:00:00")
-      const dayName = date.toLocaleDateString("en-US", { weekday: "short" })
-      const monthDay = date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      // Handle assigned_date which could be a Date object, ISO string, or date string
+      let dayName = "TBD"
+      let monthDay = ""
+      if (v.assigned_date) {
+        const rawDate = v.assigned_date
+        // Extract just the date part (YYYY-MM-DD) regardless of input format
+        const dateStr = rawDate instanceof Date 
+          ? rawDate.toISOString().split("T")[0] 
+          : String(rawDate).substring(0, 10)
+        const date = new Date(dateStr + "T12:00:00")
+        if (!isNaN(date.getTime())) {
+          dayName = date.toLocaleDateString("en-US", { weekday: "short" })
+          monthDay = date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        }
+      }
       const orderLabel = v.prayer_type === "A" || v.prayer_type === "B" ? ` [${v.prayer_type}]` : (v.prayer_type ? ` - ${v.prayer_type}` : "")
       return `<tr>
         <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${v.volunteer_name}</td>
         <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${v.volunteer_type}${orderLabel}</td>
-        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${dayName}, ${monthDay}</td>
-        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${v.time_slot}</td>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${dayName}${monthDay ? `, ${monthDay}` : ""}</td>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #f0e8e0;">${v.time_slot || "TBD"}</td>
       </tr>`
     }).join("")
 
