@@ -44,7 +44,7 @@ import { CountdownTimer } from "./countdown-timer"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { PaymentStatusDialog } from "./payment-status-dialog"
-import { handleExportBadges, handleExportFullData, handleExportLWCC, handleExportContactInfo, handleExportResendTshirtOrdered, handleExportResendNoTshirt, handleExportTshirtBreakdown } from "./export-badges"
+import { handleExportBadges, handleExportFullData, handleExportLWCC, handleExportContactInfo, handleExportResendTshirtOrdered, handleExportResendNoTshirt, handleExportTshirtBreakdown, handleExportAttendees } from "./export-badges"
 import { DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
 
 interface Registration {
@@ -311,6 +311,11 @@ export function AdminDashboard() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={handleExportAttendees}>
+                  <UsersIcon className="mr-2 size-4" />
+                  Attendees List (2025 Format)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleExportBadges}>
                   <DownloadIcon className="mr-2 size-4" />
                   Name Badges (CSV)
