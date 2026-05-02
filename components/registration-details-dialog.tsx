@@ -35,7 +35,16 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
   const [volunteerForm, setVolunteerForm] = useState({ volunteer_name: "", volunteer_type: "" })
   const [savingVolunteer, setSavingVolunteer] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const [adventureEnabled, setAdventureEnabled] = useState<boolean | null>(null)
   const { toast } = useToast()
+
+  // Fetch adventure setting
+  useEffect(() => {
+    fetch("/api/settings/adventure")
+      .then((r) => r.json())
+      .then((data) => setAdventureEnabled(data.enabled))
+      .catch(() => setAdventureEnabled(false))
+  }, [])
 
   const fetchDetails = async () => {
     try {
@@ -631,6 +640,20 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                   <p className="text-sm font-medium text-muted-foreground">T-Shirt Total</p>
                   <p>${data.tshirt_total || 0}</p>
                 </div>
+                {/* Adventure Cost - show if they have any adventure charges */}
+                {Number(data.climbing_tower_total || 0) > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Adventure Activities
+                      {adventureEnabled === false && (
+                        <span className="ml-1 text-xs text-amber-600">(Disabled - not in total)</span>
+                      )}
+                    </p>
+                    <p className={adventureEnabled === false ? "text-muted-foreground line-through" : ""}>
+                      ${Number(data.climbing_tower_total || 0).toFixed(2)}
+                    </p>
+                  </div>
+                )}
                 {data.scholarship_donation > 0 && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Scholarship Donation</p>
@@ -648,7 +671,13 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Owed</p>
                   <p className="text-lg font-semibold text-primary">
-                    ${(Number(data.registration_fee || 0) + Number(data.lodging_total || 0) + Number(data.tshirt_total || 0) + Number(data.scholarship_donation || 0)).toFixed(2)}
+                    ${(
+                      Number(data.registration_fee || 0) + 
+                      Number(data.lodging_total || 0) + 
+                      Number(data.tshirt_total || 0) + 
+                      Number(data.scholarship_donation || 0) +
+                      (adventureEnabled ? Number(data.climbing_tower_total || 0) : 0)
+                    ).toFixed(2)}
                   </p>
                 </div>
                 {data.payment_notes && (
