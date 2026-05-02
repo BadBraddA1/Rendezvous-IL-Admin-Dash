@@ -108,6 +108,8 @@ export function LodgingDialog({
                   <SelectItem value="motel_1queen_2bunk">Motel: 1 Queen Bed + 2 Bunk Beds</SelectItem>
                   <SelectItem value="rv">RV Site ($30/night × 4 nights = $120)</SelectItem>
                   <SelectItem value="tent">Tent Camping ($20/night × 4 nights = $80)</SelectItem>
+                  <SelectItem value="drive_in">Drive-In (Day Visitors)</SelectItem>
+                  <SelectItem value="commuting">Commuting</SelectItem>
                 </SelectContent>
               </Select>
             </div>

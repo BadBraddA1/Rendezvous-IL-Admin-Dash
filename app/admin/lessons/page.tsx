@@ -31,6 +31,11 @@ import {
   LinkIcon,
   TrophyIcon,
   BellIcon,
+  DownloadIcon,
+  FileTextIcon,
+  FlaskConicalIcon,
+  InfoIcon,
+  ExternalLinkIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -83,6 +88,7 @@ export default function LessonsPage() {
   const [loadingPresenters, setLoadingPresenters] = useState(true)
   const [sendingInvites, setSendingInvites] = useState(false)
   const [sendingReminders, setSendingReminders] = useState(false)
+  const [sendingSpeakerEmails, setSendingSpeakerEmails] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
   // Topic dialog
@@ -94,6 +100,12 @@ export default function LessonsPage() {
   const [assignDialog, setAssignDialog] = useState<{ open: boolean; topic?: Topic }>({ open: false })
   const [assignForm, setAssignForm] = useState({ presenter: "", day: "", session: "" })
   const [savingAssign, setSavingAssign] = useState(false)
+
+  // Test email
+  const [testEmail, setTestEmail] = useState("")
+  const [testEmailType, setTestEmailType] = useState<"invite" | "reminder" | "speaker">("invite")
+  const [sendingTest, setSendingTest] = useState(false)
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; note?: string } | null>(null)
 
   const fetchTopics = async () => {
     const res = await fetch("/api/lessons/topics")
@@ -242,6 +254,85 @@ export default function LessonsPage() {
     }
   }
 
+  const emailSpeakers = async () => {
+    const speakers = presenters.filter((p) => p.submitted_at && p.claimed_lesson_id)
+    if (speakers.length === 0) {
+      toast({ title: "No speakers to email", description: "No one has claimed a topic yet." })
+      return
+    }
+    if (!confirm(`Send lesson title & Scripture reading request to ${speakers.length} speaker(s)?`)) return
+    
+    setSendingSpeakerEmails(true)
+    try {
+      const res = await fetch("/api/lessons/email-speakers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      })
+      const data = await res.json()
+      toast({ title: data.message ?? data.error })
+    } finally {
+      setSendingSpeakerEmails(false)
+    }
+  }
+
+  const sendTestEmail = async () => {
+    if (!testEmail) {
+      toast({ title: "Email Required", description: "Please enter your email address", variant: "destructive" })
+      return
+    }
+    setSendingTest(true)
+    setTestResult(null)
+    try {
+      const res = await fetch("/api/lessons/test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ testEmail, emailType: testEmailType }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setTestResult({ success: true, message: data.message, note: data.note })
+        toast({ title: "Test Email Sent", description: `Check ${testEmail}` })
+      } else {
+        setTestResult({ success: false, message: data.error || "Failed to send" })
+        toast({ title: "Error", description: data.error, variant: "destructive" })
+      }
+    } catch (err: any) {
+      setTestResult({ success: false, message: err.message || "Network error" })
+      toast({ title: "Error", description: "Failed to send test email", variant: "destructive" })
+    } finally {
+      setSendingTest(false)
+    }
+  }
+
+  const exportSpeakers = () => {
+    const speakers = presenters.filter(p => p.claimed_lesson_id && p.submitted_at)
+    if (speakers.length === 0) return
+
+    const rows = speakers.map(p => {
+      const topic = topics.find(t => t.id === p.claimed_lesson_id)
+      return {
+        name: p.volunteer_name,
+        email: p.email,
+        topic: topic?.title || p.claimed_topic_title || ""
+      }
+    })
+
+    const csvHeader = "Name,Email,Topic"
+    const csvRows = rows.map(r =>
+      `"${r.name.replace(/"/g, '""')}","${r.email.replace(/"/g, '""')}","${r.topic.replace(/"/g, '""')}"`
+    )
+    const csv = [csvHeader, ...csvRows].join("\n")
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "lesson-speakers.csv"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   // ---------- Derived stats ----------
   const submitted = presenters.filter((p) => p.submitted_at)
   const pending = presenters.filter((p) => !p.submitted_at)
@@ -295,7 +386,7 @@ export default function LessonsPage() {
         </div>
 
         <Tabs defaultValue="topics">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="topics" className="gap-2">
               <BookOpenIcon className="size-4" />
               Topics
@@ -312,6 +403,10 @@ export default function LessonsPage() {
             <TabsTrigger value="bids" className="gap-2">
               <TrophyIcon className="size-4" />
               Bids &amp; Assign
+            </TabsTrigger>
+            <TabsTrigger value="test" className="gap-2">
+              <FlaskConicalIcon className="size-4" />
+              Test
             </TabsTrigger>
           </TabsList>
 
@@ -493,6 +588,34 @@ export default function LessonsPage() {
 
           {/* ---- BIDS & ASSIGN TAB ---- */}
           <TabsContent value="bids" className="mt-6 space-y-4">
+            {/* Speaker Actions */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-sm text-muted-foreground">
+                {submitted.length} speaker{submitted.length !== 1 ? "s" : ""} have claimed topics
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={exportSpeakers}
+                  disabled={submitted.length === 0}
+                  className="gap-1"
+                >
+                  <DownloadIcon className="size-3" />
+                  Export for Resend
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={emailSpeakers}
+                  disabled={sendingSpeakerEmails || submitted.length === 0}
+                  className="gap-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  {sendingSpeakerEmails ? <Loader2Icon className="size-3 animate-spin" /> : <FileTextIcon className="size-3" />}
+                  Email All Speakers
+                </Button>
+              </div>
+            </div>
+
             {topics.length === 0 ? (
               <div className="text-center py-16 border-2 border-dashed rounded-xl text-muted-foreground space-y-2">
                 <TrophyIcon className="size-10 mx-auto opacity-40" />
@@ -554,6 +677,146 @@ export default function LessonsPage() {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* ---- TEST TAB ---- */}
+          <TabsContent value="test" className="mt-6 space-y-6">
+            {/* How It Works */}
+            <Card className="border-blue-200 bg-blue-50/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2 text-blue-800">
+                  <InfoIcon className="size-4" />
+                  How Lesson Emails Work
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-blue-900 space-y-3">
+                <div>
+                  <p className="font-semibold mb-1">Data Flow:</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-2 text-blue-800">
+                    <li><strong>Presenters</strong> are pulled from <code className="bg-blue-100 px-1 rounded">volunteer_signups</code> table (people who signed up to present)</li>
+                    <li><strong>Topics</strong> are stored in <code className="bg-blue-100 px-1 rounded">lesson_topics</code> table (you create these)</li>
+                    <li><strong>Invite Email</strong> contains a unique link with a token for each presenter</li>
+                    <li>When presenter clicks link, they go to <code className="bg-blue-100 px-1 rounded">/lessons/pick</code> page to claim a topic</li>
+                    <li>Claim is stored in <code className="bg-blue-100 px-1 rounded">volunteer_signups.claimed_lesson_id</code></li>
+                    <li><strong>Speaker Email</strong> asks them to reply with their lesson title and scripture reading</li>
+                  </ol>
+                </div>
+                <div className="pt-2 border-t border-blue-200">
+                  <p className="font-semibold mb-1">Email Types:</p>
+                  <ul className="space-y-1 ml-2 text-blue-800">
+                    <li><strong>Invite:</strong> Initial email with link to claim a topic (first-come, first-served)</li>
+                    <li><strong>Reminder:</strong> Follow-up for those who got invite but have not claimed yet</li>
+                    <li><strong>Speaker:</strong> Asks speakers who claimed a topic to submit their lesson title and scripture</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Test Email Form */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FlaskConicalIcon className="size-4" />
+                  Send Test Email
+                </CardTitle>
+                <CardDescription>
+                  Send a test email to yourself to preview how each email type looks
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Your Email Address</Label>
+                  <Input
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email Type</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: "invite" as const, label: "Invite", desc: "Claim your topic" },
+                      { value: "reminder" as const, label: "Reminder", desc: "Deadline approaching" },
+                      { value: "speaker" as const, label: "Speaker", desc: "Submit title & scripture" },
+                    ].map((type) => (
+                      <button
+                        key={type.value}
+                        onClick={() => setTestEmailType(type.value)}
+                        className={cn(
+                          "p-3 rounded-lg border-2 text-left transition-all",
+                          testEmailType === type.value
+                            ? "border-amber-500 bg-amber-50"
+                            : "border-border hover:border-amber-300"
+                        )}
+                      >
+                        <p className="font-semibold text-sm">{type.label}</p>
+                        <p className="text-xs text-muted-foreground">{type.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  onClick={sendTestEmail}
+                  disabled={sendingTest || !testEmail}
+                  className="w-full"
+                >
+                  {sendingTest ? (
+                    <><Loader2Icon className="size-4 mr-2 animate-spin" />Sending...</>
+                  ) : (
+                    <><SendIcon className="size-4 mr-2" />Send Test Email</>
+                  )}
+                </Button>
+
+                {testResult && (
+                  <div className={cn(
+                    "p-4 rounded-lg border",
+                    testResult.success 
+                      ? "bg-green-50 border-green-200" 
+                      : "bg-red-50 border-red-200"
+                  )}>
+                    <p className={cn(
+                      "font-medium text-sm",
+                      testResult.success ? "text-green-800" : "text-red-800"
+                    )}>
+                      {testResult.success ? <CheckCircleIcon className="size-4 inline mr-1" /> : null}
+                      {testResult.message}
+                    </p>
+                    {testResult.note && (
+                      <p className="text-xs text-muted-foreground mt-1">{testResult.note}</p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Preview Links */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ExternalLinkIcon className="size-4" />
+                  Preview the Claim Page
+                </CardTitle>
+                <CardDescription>
+                  See what presenters see when they click the link in their email
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open("/lessons/pick?token=PREVIEW", "_blank")}
+                  className="gap-2"
+                >
+                  <ExternalLinkIcon className="size-4" />
+                  Open Claim Page (Preview Mode)
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Note: Without a valid token, the page will show an error - this is expected behavior. 
+                  To see a working version, copy a real link from the Invites tab.
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

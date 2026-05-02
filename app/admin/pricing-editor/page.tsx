@@ -150,6 +150,8 @@ export default function PricingEditorPage() {
     const lodgingType = (reg.lodging_type || "").toLowerCase()
     const isRV = lodgingType.includes("rv")
     const isTent = lodgingType.includes("tent")
+    const isDriveIn = lodgingType.includes("drive")
+    const isCommuting = lodgingType.includes("commut")
 
     let memberTotal = 0
     reg.family_members.forEach(fm => {
@@ -164,15 +166,17 @@ export default function PricingEditorPage() {
       }
     })
 
-    // Site fee
+    // Site fee (not for drive-in or commuting)
     let siteFee = 0
     const nights = edit.siteNights || 4
-    if (isRV) {
-      const rvSiteRate = rates.find(r => r.rate_key === "rv_site_night")
-      siteFee = (rvSiteRate?.rate_value || 30) * nights
-    } else if (isTent) {
-      const tentSiteRate = rates.find(r => r.rate_key === "tent_site_night")
-      siteFee = (tentSiteRate?.rate_value || 20) * nights
+    if (!isDriveIn && !isCommuting) {
+      if (isRV) {
+        const rvSiteRate = rates.find(r => r.rate_key === "rv_site_night")
+        siteFee = (rvSiteRate?.rate_value || 30) * nights
+      } else if (isTent) {
+        const tentSiteRate = rates.find(r => r.rate_key === "tent_site_night")
+        siteFee = (tentSiteRate?.rate_value || 20) * nights
+      }
     }
 
     const regFee = edit.regFee ?? reg.registration_fee ?? 25
@@ -274,7 +278,7 @@ export default function PricingEditorPage() {
             const applicableRates = getRatesByLodgingType(reg.lodging_type)
             const edit = getEdit(reg.id)
             const lodgingType = (reg.lodging_type || "").toLowerCase()
-            const showSiteFee = lodgingType.includes("rv") || lodgingType.includes("tent")
+            const showSiteFee = (lodgingType.includes("rv") || lodgingType.includes("tent")) && !lodgingType.includes("drive") && !lodgingType.includes("commut")
 
             return (
               <Card key={reg.id} className={difference !== 0 ? (difference > 0 ? "border-green-200" : "border-red-200") : ""}>
