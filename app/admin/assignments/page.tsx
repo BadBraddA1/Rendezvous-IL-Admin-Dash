@@ -109,6 +109,16 @@ export default function AssignmentsPage() {
 
       const data = await res.json()
       
+      if (!res.ok) {
+        toast({ 
+          title: "Import Failed", 
+          description: data.error || "Unknown error occurred",
+          variant: "destructive"
+        })
+        setImporting(false)
+        return
+      }
+      
       toast({ 
         title: "Import Complete", 
         description: `Imported ${data.imported} assignments. ${data.matched} matched to registrations, ${data.unmatched} unmatched.`

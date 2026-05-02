@@ -1,31 +1,60 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 
+// Ensure table exists
+async function ensureTableExists(sql: any) {
+  await sql`
+    CREATE TABLE IF NOT EXISTS special_assignments (
+      id SERIAL PRIMARY KEY,
+      activity_name TEXT NOT NULL,
+      assigned_name TEXT NOT NULL,
+      assigned_date DATE,
+      time_slot TEXT,
+      notes TEXT,
+      registration_id INTEGER REFERENCES registrations(id),
+      family_member_id INTEGER REFERENCES family_members(id),
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+}
+
 // GET all special assignments
 export async function GET() {
   const sql = getDb()
   
-  const assignments = await sql`
-    SELECT 
-      sa.*,
-      r.family_last_name,
-      fm.first_name as matched_first_name
-    FROM special_assignments sa
-    LEFT JOIN registrations r ON r.id = sa.registration_id
-    LEFT JOIN family_members fm ON fm.id = sa.family_member_id
-    ORDER BY sa.assigned_date, sa.time_slot, sa.activity_name
-  `
-  
-  return NextResponse.json(assignments)
+  try {
+    await ensureTableExists(sql)
+    
+    const assignments = await sql`
+      SELECT 
+        sa.*,
+        r.family_last_name,
+        fm.first_name as matched_first_name
+      FROM special_assignments sa
+      LEFT JOIN registrations r ON r.id = sa.registration_id
+      LEFT JOIN family_members fm ON fm.id = sa.family_member_id
+      ORDER BY sa.assigned_date, sa.time_slot, sa.activity_name
+    `
+    
+    return NextResponse.json(assignments)
+  } catch (error: any) {
+    console.error("[v0] GET /api/assignments error:", error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 }
 
 // POST - create or import assignments
 export async function POST(request: NextRequest) {
   const sql = getDb()
-  const body = await request.json()
   
-  // Handle bulk import
-  if (body.assignments && Array.isArray(body.assignments)) {
+  try {
+    await ensureTableExists(sql)
+    
+    const body = await request.json()
+  
+    // Handle bulk import
+    if (body.assignments && Array.isArray(body.assignments)) {
     const results = []
     
     for (const a of body.assignments) {
@@ -81,6 +110,10 @@ export async function POST(request: NextRequest) {
   `
   
   return NextResponse.json(result[0])
+  } catch (error: any) {
+    console.error("[v0] POST /api/assignments error:", error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 }
 
 // Helper to match "Abel Bradd" to a family member
@@ -116,6 +149,13 @@ async function matchNameToFamilyMember(sql: any, fullName: string) {
 // DELETE all assignments
 export async function DELETE() {
   const sql = getDb()
-  await sql`DELETE FROM special_assignments`
-  return NextResponse.json({ success: true })
+  
+  try {
+    await ensureTableExists(sql)
+    await sql`DELETE FROM special_assignments`
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error("[v0] DELETE /api/assignments error:", error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 }
