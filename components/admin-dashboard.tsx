@@ -34,6 +34,7 @@ import {
   BookOpenIcon,
   LogOutIcon,
   MountainSnowIcon,
+  CalendarCheckIcon,
   CarIcon,
   UtensilsIcon,
   DollarSignIcon,
@@ -488,6 +489,19 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground">Climbing tower &amp; activities</div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Special Assignments card */}
+          <Link href="/admin/assignments">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors border-purple-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Special Assignments</CardTitle>
+                <CalendarCheckIcon className="size-4 text-purple-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Activity leadership roles</div>
               </CardContent>
             </Card>
           </Link>

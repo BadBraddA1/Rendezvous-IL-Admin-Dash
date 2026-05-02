@@ -54,6 +54,14 @@ export async function POST(request: NextRequest) {
         ORDER BY assigned_date, time_slot, prayer_type
       `
 
+      // Fetch special assignments for this registration
+      const specialAssignments = await sql`
+        SELECT activity_name, assigned_name, assigned_date, time_slot, notes
+        FROM special_assignments
+        WHERE registration_id = ${reg.id}
+        ORDER BY assigned_date, time_slot, activity_name
+      `
+
       const regFee = Number(reg.registration_fee || 0)
       const lodging = Number(reg.lodging_total || 0)
       const donation = Number(reg.scholarship_donation || 0)
@@ -68,7 +76,7 @@ export async function POST(request: NextRequest) {
       payloads.push({
         to: reg.email,
         subject: "Your Check-In QR Code - Rendezvous 2026",
-        html: buildCheckinHtml(reg, regFee, lodging, donation, tshirts, adventure, totalOwed, amountDue, qrCodeUrl, volunteers),
+        html: buildCheckinHtml(reg, regFee, lodging, donation, tshirts, adventure, totalOwed, amountDue, qrCodeUrl, volunteers, specialAssignments),
       })
     }
 
@@ -103,7 +111,8 @@ function buildCheckinHtml(
   totalOwed: number,
   amountDue: number,
   qrCodeUrl: string,
-  volunteers: any[]
+  volunteers: any[],
+  specialAssignments: any[]
 ): string {
   // Build volunteer schedule HTML if there are any scheduled volunteers
   let volunteerHtml = ""
@@ -147,6 +156,49 @@ function buildCheckinHtml(
             ${volunteerRows}
           </table>
           <p style="color:#555;font-size:12px;margin:12px 0 0;font-style:italic;">Thank you for volunteering! Please arrive a few minutes early for your assigned times.</p>
+        </td></tr>
+      </table>`
+  }
+
+  // Build special assignments HTML if there are any
+  let assignmentsHtml = ""
+  if (specialAssignments.length > 0) {
+    const assignmentRows = specialAssignments.map((a) => {
+      let dayName = ""
+      let monthDay = ""
+      if (a.assigned_date) {
+        const rawDate = a.assigned_date
+        const dateStr = rawDate instanceof Date 
+          ? rawDate.toISOString().split("T")[0] 
+          : String(rawDate).substring(0, 10)
+        const date = new Date(dateStr + "T12:00:00")
+        if (!isNaN(date.getTime())) {
+          dayName = date.toLocaleDateString("en-US", { weekday: "short" })
+          monthDay = date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        }
+      }
+      return `<tr>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #e8d8f0;">${a.assigned_name}</td>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #e8d8f0;">${a.activity_name}</td>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #e8d8f0;">${dayName}${monthDay ? `, ${monthDay}` : "TBD"}</td>
+        <td style="color:#555;font-size:13px;padding:6px 8px;border-bottom:1px solid #e8d8f0;">${a.time_slot || "TBD"}</td>
+      </tr>`
+    }).join("")
+
+    assignmentsHtml = `
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0ff;border:1px solid #c8b0e8;border-radius:8px;margin:24px 0;">
+        <tr><td style="padding:20px;">
+          <h3 style="color:#6b21a8;margin:0 0 16px;font-size:16px;">Your Activity Assignments</h3>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:6px;overflow:hidden;">
+            <tr style="background:#f0e8ff;">
+              <th style="color:#6b21a8;font-size:12px;font-weight:bold;padding:8px;text-align:left;">Name</th>
+              <th style="color:#6b21a8;font-size:12px;font-weight:bold;padding:8px;text-align:left;">Activity</th>
+              <th style="color:#6b21a8;font-size:12px;font-weight:bold;padding:8px;text-align:left;">Date</th>
+              <th style="color:#6b21a8;font-size:12px;font-weight:bold;padding:8px;text-align:left;">Time</th>
+            </tr>
+            ${assignmentRows}
+          </table>
+          <p style="color:#555;font-size:12px;margin:12px 0 0;font-style:italic;">Thank you for helping lead activities!</p>
         </td></tr>
       </table>`
   }
@@ -199,6 +251,7 @@ function buildCheckinHtml(
             </td></tr>
           </table>
           ${volunteerHtml}
+          ${assignmentsHtml}
           <p style="color:#555;font-size:14px;line-height:1.6;margin:24px 0 0;">
             We look forward to a wonderful time of fellowship with the ${reg.family_last_name} family!
           </p>
