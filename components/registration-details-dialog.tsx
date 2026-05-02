@@ -234,6 +234,12 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
 
   if (!data) return null
 
+  // Calculate live totals from family members
+  const calculatedLodgingTotal = data.family_members?.reduce(
+    (sum: number, member: any) => sum + (Number(member.person_cost) || 0),
+    0
+  ) || 0
+
   return (
     <>
       <Dialog open={true} onOpenChange={onClose}>
@@ -343,8 +349,13 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                   <Badge variant="outline">{data.lodging_type || "Not specified"}</Badge>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Lodging Total</p>
-                  <p className="text-lg font-semibold">${data.lodging_total || 0}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Lodging Total (Calculated)</p>
+                  <p className="text-lg font-semibold">${calculatedLodgingTotal.toFixed(2)}</p>
+                  {data.lodging_total !== undefined && Math.abs(Number(data.lodging_total) - calculatedLodgingTotal) > 0.01 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Stored: ${Number(data.lodging_total).toFixed(2)} (differs from calculated)
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -397,7 +408,7 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                                 {member.is_baptized ? "Yes" : "No"}
                               </Badge>
                             </TableCell>
-                            <TableCell>${member.person_cost || 0}</TableCell>
+                            <TableCell>${Number(member.person_cost || 0).toFixed(2)}</TableCell>
                             <TableCell className="text-right">
                               {editMode && (
                                 <div className="flex justify-end gap-2">
@@ -416,6 +427,14 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                             </TableCell>
                           </TableRow>
                         ))
+                      )}
+                      {/* Total row */}
+                      {data.family_members.length > 0 && (
+                        <TableRow className="bg-muted/50 font-semibold">
+                          <TableCell colSpan={4} className="text-right">Total:</TableCell>
+                          <TableCell>${calculatedLodgingTotal.toFixed(2)}</TableCell>
+                          <TableCell />
+                        </TableRow>
                       )}
                     </TableBody>
                   </Table>
