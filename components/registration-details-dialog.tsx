@@ -432,7 +432,7 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                         data.family_members.map((member: any) => (
                           <TableRow key={member.id}>
                             <TableCell>{member.first_name}</TableCell>
-                            <TableCell>{Number(member.age) >= 18 ? "Adult" : member.age}</TableCell>
+                            <TableCell>{member.age}</TableCell>
                             <TableCell>
                               {member.date_of_birth ? new Date(member.date_of_birth).toLocaleDateString() : "N/A"}
                             </TableCell>
