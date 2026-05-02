@@ -547,9 +547,9 @@ export default function CheckInPage() {
                     {scannedRegistration.family_members.map((member) => (
                       <div key={member.id} className="flex items-center justify-between text-sm">
                         <span>{member.first_name} {member.last_name}</span>
-                        <span className="text-muted-foreground">
-                          {member.age ? `Age ${member.age}` : ""}
-                        </span>
+<span className="text-muted-foreground">
+                                          {member.age ? (Number(member.age) >= 18 ? "Adult" : `Age ${member.age}`) : ""}
+                                        </span>
                       </div>
                     ))}
                   </div>
