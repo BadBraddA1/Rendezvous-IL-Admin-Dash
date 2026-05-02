@@ -28,6 +28,22 @@ export async function POST() {
       VALUES ('adventure_enabled', 'false')
       ON CONFLICT (key) DO NOTHING
     `
+
+    // Create special_assignments table for activity leadership roles
+    await sql`
+      CREATE TABLE IF NOT EXISTS special_assignments (
+        id SERIAL PRIMARY KEY,
+        activity_name TEXT NOT NULL,
+        assigned_name TEXT NOT NULL,
+        assigned_date DATE,
+        time_slot TEXT,
+        notes TEXT,
+        registration_id INTEGER REFERENCES registrations(id),
+        family_member_id INTEGER REFERENCES family_members(id),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `
     
     return NextResponse.json({ success: true, message: "Migration complete" })
   } catch (err: any) {
