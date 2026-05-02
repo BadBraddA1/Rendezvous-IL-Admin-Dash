@@ -123,6 +123,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         WHERE id = ${id}
         RETURNING *
       `
+    } else if (updates.length === 1 && updates.includes("lodging_total")) {
+      // Lodging total only (for Accept Calculated button)
+      result = await sql`
+        UPDATE registrations
+        SET lodging_total = ${body.lodging_total}, updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING *
+      `
     } else {
       // Full update - all fields provided
       result = await sql`
