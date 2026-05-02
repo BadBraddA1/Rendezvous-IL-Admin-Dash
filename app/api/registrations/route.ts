@@ -33,7 +33,8 @@ export async function GET(request: Request) {
           COUNT(DISTINCT fm.id) as family_member_count,
           COUNT(DISTINCT ts.id) as tshirt_order_count,
           COUNT(DISTINCT vs.id) as volunteer_count,
-          (SELECT first_name FROM family_members WHERE registration_id = r.id ORDER BY age DESC NULLS LAST, id LIMIT 1) as first_person_name
+          (SELECT first_name FROM family_members WHERE registration_id = r.id ORDER BY age DESC NULLS LAST, id LIMIT 1) as first_person_name,
+          COALESCE((SELECT SUM(COALESCE(person_cost, 0)) FROM family_members WHERE registration_id = r.id), 0) as calculated_lodging_total
         FROM registrations r
         LEFT JOIN family_members fm ON r.id = fm.registration_id
         LEFT JOIN tshirt_orders ts ON r.id = ts.registration_id
@@ -51,7 +52,8 @@ export async function GET(request: Request) {
           COUNT(DISTINCT fm.id) as family_member_count,
           COUNT(DISTINCT ts.id) as tshirt_order_count,
           COUNT(DISTINCT vs.id) as volunteer_count,
-          (SELECT first_name FROM family_members WHERE registration_id = r.id ORDER BY age DESC NULLS LAST, id LIMIT 1) as first_person_name
+          (SELECT first_name FROM family_members WHERE registration_id = r.id ORDER BY age DESC NULLS LAST, id LIMIT 1) as first_person_name,
+          COALESCE((SELECT SUM(COALESCE(person_cost, 0)) FROM family_members WHERE registration_id = r.id), 0) as calculated_lodging_total
         FROM registrations r
         LEFT JOIN family_members fm ON r.id = fm.registration_id
         LEFT JOIN tshirt_orders ts ON r.id = ts.registration_id
@@ -68,7 +70,8 @@ export async function GET(request: Request) {
           COUNT(DISTINCT fm.id) as family_member_count,
           COUNT(DISTINCT ts.id) as tshirt_order_count,
           COUNT(DISTINCT vs.id) as volunteer_count,
-          (SELECT first_name FROM family_members WHERE registration_id = r.id ORDER BY age DESC NULLS LAST, id LIMIT 1) as first_person_name
+          (SELECT first_name FROM family_members WHERE registration_id = r.id ORDER BY age DESC NULLS LAST, id LIMIT 1) as first_person_name,
+          COALESCE((SELECT SUM(COALESCE(person_cost, 0)) FROM family_members WHERE registration_id = r.id), 0) as calculated_lodging_total
         FROM registrations r
         LEFT JOIN family_members fm ON r.id = fm.registration_id
         LEFT JOIN tshirt_orders ts ON r.id = ts.registration_id
@@ -85,7 +88,8 @@ export async function GET(request: Request) {
           COUNT(DISTINCT fm.id) as family_member_count,
           COUNT(DISTINCT ts.id) as tshirt_order_count,
           COUNT(DISTINCT vs.id) as volunteer_count,
-          (SELECT first_name FROM family_members WHERE registration_id = r.id ORDER BY age DESC NULLS LAST, id LIMIT 1) as first_person_name
+          (SELECT first_name FROM family_members WHERE registration_id = r.id ORDER BY age DESC NULLS LAST, id LIMIT 1) as first_person_name,
+          COALESCE((SELECT SUM(COALESCE(person_cost, 0)) FROM family_members WHERE registration_id = r.id), 0) as calculated_lodging_total
         FROM registrations r
         LEFT JOIN family_members fm ON r.id = fm.registration_id
         LEFT JOIN tshirt_orders ts ON r.id = ts.registration_id

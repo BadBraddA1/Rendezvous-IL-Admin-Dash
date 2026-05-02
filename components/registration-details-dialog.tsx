@@ -361,9 +361,33 @@ export function RegistrationDetailsDialog({ registrationId, onClose }: Registrat
                   <p className="text-sm font-medium text-muted-foreground">Lodging Total (Calculated)</p>
                   <p className="text-lg font-semibold">${calculatedLodgingTotal.toFixed(2)}</p>
                   {data.lodging_total !== undefined && Math.abs(Number(data.lodging_total) - calculatedLodgingTotal) > 0.01 && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      Stored: ${Number(data.lodging_total).toFixed(2)} (differs from calculated)
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-amber-600">
+                        Stored: ${Number(data.lodging_total).toFixed(2)}
+                      </p>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-6 text-xs px-2"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch(`/api/registrations/${registrationId}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ lodging_total: calculatedLodgingTotal }),
+                            })
+                            if (res.ok) {
+                              toast({ title: "Updated", description: "Lodging total synced with calculated value" })
+                              fetchDetails()
+                            }
+                          } catch {
+                            toast({ title: "Error", description: "Failed to update", variant: "destructive" })
+                          }
+                        }}
+                      >
+                        Accept Calculated
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardContent>
