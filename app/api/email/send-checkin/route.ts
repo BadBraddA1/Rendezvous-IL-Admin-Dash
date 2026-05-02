@@ -173,6 +173,9 @@ function buildCheckinHtml(
               <p style="color:#8B4513;font-size:20px;font-weight:bold;margin:16px 0 4px;font-family:monospace;letter-spacing:2px;">${reg.checkin_qr_code}</p>
               <p style="color:#888;font-size:12px;margin:0;">Your Check-In Code</p>
             </div>
+            <p style="color:#555;font-size:14px;line-height:1.6;margin:20px 0 0;max-width:450px;display:inline-block;">
+              Please pay your balance owed at check-in with either a personal check (made out to &quot;Stephen Bradd&quot;), cash, or Venmo (<strong>sbradd78</strong>).
+            </p>
           </div>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef9f0;border:1px solid #f5c89a;border-radius:8px;margin:24px 0;">
             <tr><td style="padding:20px;">
