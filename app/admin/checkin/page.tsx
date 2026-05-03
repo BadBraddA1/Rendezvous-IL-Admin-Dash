@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckIcon, AlertCircleIcon, DollarSignIcon, ScanIcon, XIcon, CameraIcon, KeyboardIcon, HomeIcon, UserIcon, PlusIcon, TrashIcon, KeyIcon, LockIcon, HandCoinsIcon } from "lucide-react"
+import { CheckIcon, AlertCircleIcon, DollarSignIcon, ScanIcon, XIcon, CameraIcon, KeyboardIcon, HomeIcon, UserIcon, PlusIcon, TrashIcon, KeyIcon, LockIcon, HandCoinsIcon, ShirtIcon } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,6 +24,14 @@ interface FamilyMember {
   last_name: string
   age: number | null
   is_baptized: boolean | null
+}
+
+interface TshirtOrder {
+  id: number
+  size: string
+  color: string
+  quantity: number
+  price: number | null
 }
 
 interface Registration {
@@ -45,6 +54,8 @@ interface Registration {
   room_keys: string[] | null
   pre_assigned_keys: string[] | null
   family_members?: FamilyMember[]
+  tshirt_orders?: TshirtOrder[]
+  tshirts_distributed?: boolean | null
 }
 
 export default function CheckInPage() {
@@ -62,6 +73,7 @@ export default function CheckInPage() {
   const [scholarshipAmount, setScholarshipAmount] = useState("")
   const [scholarshipNote, setScholarshipNote] = useState("")
   const [savingScholarship, setSavingScholarship] = useState(false)
+  const [savingTshirtsDistributed, setSavingTshirtsDistributed] = useState(false)
   const { toast } = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
   const html5QrCodeRef = useRef<any>(null)
@@ -433,6 +445,37 @@ export default function CheckInPage() {
     }
   }
 
+  const handleToggleTshirtsDistributed = async (checked: boolean) => {
+    if (!scannedRegistration) return
+    setSavingTshirtsDistributed(true)
+    try {
+      const response = await fetch(
+        `/api/registrations/${scannedRegistration.id}/tshirts-distributed`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ distributed: checked }),
+        },
+      )
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || "Failed to update")
+      }
+      setScannedRegistration({ ...scannedRegistration, tshirts_distributed: checked })
+      toast({
+        title: checked ? "T-shirts marked as given" : "T-shirts marked as not yet given",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message ?? "Failed to update t-shirt status",
+        variant: "destructive",
+      })
+    } finally {
+      setSavingTshirtsDistributed(false)
+    }
+  }
+
   const needsPayment = (registration: Registration) => {
     return registration.payment_status !== "paid"
   }
@@ -770,6 +813,65 @@ export default function CheckInPage() {
                   </div>
                 )
               })()}
+
+              {/* T-Shirts: show ordered shirts and a checkbox to mark them as given */}
+              {scannedRegistration.tshirt_orders && scannedRegistration.tshirt_orders.length > 0 && (
+                <div
+                  className={`p-4 rounded-lg ${
+                    scannedRegistration.tshirts_distributed
+                      ? "bg-green-50 border border-green-200"
+                      : "bg-amber-50 border border-amber-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <ShirtIcon
+                        className={`size-4 ${
+                          scannedRegistration.tshirts_distributed ? "text-green-700" : "text-amber-700"
+                        }`}
+                      />
+                      T-Shirts Ordered
+                    </h4>
+                    {scannedRegistration.tshirts_distributed ? (
+                      <Badge className="bg-green-600 hover:bg-green-600">Given</Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-amber-400 text-amber-800">
+                        Not yet given
+                      </Badge>
+                    )}
+                  </div>
+
+                  <ul className="space-y-1.5 mb-3">
+                    {scannedRegistration.tshirt_orders.map((order) => (
+                      <li
+                        key={order.id}
+                        className="flex items-center justify-between bg-white border border-slate-200 rounded px-3 py-2 text-sm"
+                      >
+                        <span className="font-medium">
+                          {order.quantity > 1 && (
+                            <span className="text-muted-foreground mr-1">{order.quantity}×</span>
+                          )}
+                          {order.size}
+                        </span>
+                        <span className="text-muted-foreground capitalize">{order.color}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <Checkbox
+                      checked={!!scannedRegistration.tshirts_distributed}
+                      disabled={savingTshirtsDistributed}
+                      onCheckedChange={(checked) => handleToggleTshirtsDistributed(checked === true)}
+                    />
+                    <span className="text-sm font-medium">
+                      {scannedRegistration.tshirts_distributed
+                        ? "Shirts given to family"
+                        : "Mark shirts as given to family"}
+                    </span>
+                  </label>
+                </div>
+              )}
 
               {/* Room Keys - Only show for Motel lodging */}
               {scannedRegistration.lodging_type?.toLowerCase().includes("motel") && (
