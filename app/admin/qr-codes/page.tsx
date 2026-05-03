@@ -60,6 +60,9 @@ export default async function QrCodesPage() {
             <p className="text-sm text-muted-foreground">
               Printable list of every family&apos;s 10-digit code and scannable QR.
             </p>
+            <p className="text-xs text-muted-foreground italic mt-1">
+              For the old guy, print half page at 67%.
+            </p>
           </div>
         </div>
 
