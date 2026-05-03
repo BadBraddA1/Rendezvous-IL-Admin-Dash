@@ -345,6 +345,10 @@ export function AdminDashboard() {
                   <PrinterIcon className="mr-2 size-4" />
                   Prayer Volunteers
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open("/admin/schedule-print", "_blank")}>
+                  <PrinterIcon className="mr-2 size-4" />
+                  Volunteer Schedule (1 page)
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1">T-Shirt Reports</DropdownMenuLabel>
                 <DropdownMenuItem onClick={handleExportTshirtBreakdown}>
