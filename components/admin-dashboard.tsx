@@ -32,6 +32,7 @@ import {
   Mail,
   KeyIcon,
   QrCodeIcon,
+  PrinterIcon,
   BookOpenIcon,
   LogOutIcon,
   MountainSnowIcon,
@@ -316,6 +317,10 @@ export function AdminDashboard() {
                 <DropdownMenuItem onClick={handleExportAttendees}>
                   <UsersIcon className="mr-2 size-4" />
                   Attendees List (2025 Format)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open("/admin/attendees-print", "_blank")}>
+                  <PrinterIcon className="mr-2 size-4" />
+                  Print Attendees List (2025 Format)
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleExportBadges}>
