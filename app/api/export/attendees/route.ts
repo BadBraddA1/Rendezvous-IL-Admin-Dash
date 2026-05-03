@@ -22,7 +22,8 @@ export async function GET() {
           json_build_object(
             'first_name', fm.first_name,
             'age', fm.age,
-            'is_baptized', fm.is_baptized
+            'is_baptized', fm.is_baptized,
+            'is_adult_override', fm.is_adult_override
           ) ORDER BY fm.age DESC NULLS LAST
         ) FILTER (WHERE fm.id IS NOT NULL) as family_members
       FROM registrations r
@@ -90,13 +91,20 @@ export async function GET() {
         for (const m of members) {
           const name = m.first_name || ""
           const age = m.age
-          
-          if (age === null || age === undefined || age >= 18) {
+          const override = m.is_adult_override
+
+          // Manual override wins over age-based default.
+          const isAdult =
+            override !== null && override !== undefined
+              ? override
+              : age === null || age === undefined || age >= 18
+
+          if (isAdult) {
             // Adult - just name
             adults.push(name)
           } else {
-            // Child - name with age
-            children.push(`${name} (${age})`)
+            // Child - name with age (if known)
+            children.push(age != null ? `${name} (${age})` : name)
           }
         }
 
