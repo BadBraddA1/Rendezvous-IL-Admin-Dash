@@ -66,6 +66,7 @@ export default async function AttendeesPrintPage() {
         .attendee-table {
           font-size: 11px;
           font-family: Arial, Helvetica, sans-serif;
+          line-height: 1.25;
         }
         .attendee-table th,
         .attendee-table td {
@@ -102,10 +103,27 @@ export default async function AttendeesPrintPage() {
         .attendee-table .th-st { width: 36px; }
         .attendee-table .th-zip { width: 56px; }
 
+        /* Compact mode (toggled on screen + applied to print) */
+        .print-area[data-compact="true"] .attendee-table {
+          font-size: 8.5px;
+          line-height: 1.15;
+        }
+        .print-area[data-compact="true"] .attendee-table th,
+        .print-area[data-compact="true"] .attendee-table td {
+          padding: 1.5px 3px;
+        }
+        .print-area[data-compact="true"] .attendee-table thead th {
+          font-size: 8.5px;
+        }
+        .print-area[data-compact="true"] h1 {
+          font-size: 14px;
+          margin-bottom: 4px;
+        }
+
         @media print {
           @page {
             size: letter landscape;
-            margin: 0.4in;
+            margin: 0.35in;
           }
           html, body {
             background: white !important;
@@ -114,13 +132,33 @@ export default async function AttendeesPrintPage() {
             display: none !important;
           }
           .attendee-table {
-            font-size: 10px;
+            font-size: 9.5px;
+          }
+          .attendee-table th,
+          .attendee-table td {
+            padding: 2px 4px;
           }
           .attendee-table thead {
             display: table-header-group;
           }
           .attendee-table tr {
             page-break-inside: avoid;
+          }
+
+          /* Compact print: aggressively shrink to fit one letter-landscape page */
+          .print-area[data-compact="true"] {
+            zoom: 0.92;
+          }
+          @page :first {
+            margin-top: 0.3in;
+          }
+          .print-area[data-compact="true"] .attendee-table {
+            font-size: 7.5px;
+            line-height: 1.1;
+          }
+          .print-area[data-compact="true"] .attendee-table th,
+          .print-area[data-compact="true"] .attendee-table td {
+            padding: 1px 2.5px;
           }
         }
       `}</style>
