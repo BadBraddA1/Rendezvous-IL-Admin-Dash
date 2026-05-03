@@ -159,7 +159,9 @@ function NameList({
     <div className="flex flex-col items-center gap-0.5 print:gap-0">
       {members.map((m, i) => {
         const name = (m.first_name || "").trim()
-        const label = variant === "parent" ? name : `${name}${m.age != null ? ` (${m.age})` : ""}`
+        // Only show the age for children under 18; if a 18+ person was manually moved to CHILDREN, omit the age.
+        const showAge = variant === "child" && m.age != null && m.age < 18
+        const label = variant === "parent" ? name : `${name}${showAge ? ` (${m.age})` : ""}`
         const prefix = variant === "parent" && i > 0 ? "& " : ""
         const isOverridden = m.is_adult_override !== null && m.is_adult_override !== undefined
         const oppositeRole = variant === "parent" ? "child" : "parent"

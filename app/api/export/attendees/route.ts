@@ -103,8 +103,9 @@ export async function GET() {
             // Adult - just name
             adults.push(name)
           } else {
-            // Child - name with age (if known)
-            children.push(age != null ? `${name} (${age})` : name)
+            // Child - only show age if under 18 (so 18+ folks moved to CHILDREN don't get an age)
+            const showAge = age != null && age < 18
+            children.push(showAge ? `${name} (${age})` : name)
           }
         }
 
