@@ -2,14 +2,14 @@ import { type NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { getDb } from "@/lib/db"
 
-const ADMIN_AUTH_TOKEN = process.env.ADMIN_AUTH_TOKEN || "rendezvous-2026-admin"
+const AUTH_TOKEN = process.env.AUTH_TOKEN || "default_auth_token_change_me"
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // Admin-only: require the same admin_auth cookie used elsewhere.
+    // Admin-only: require the same admin_auth cookie set by /api/admin/login.
     const cookieStore = await cookies()
     const auth = cookieStore.get("admin_auth")?.value
-    if (auth !== ADMIN_AUTH_TOKEN) {
+    if (auth !== AUTH_TOKEN) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
