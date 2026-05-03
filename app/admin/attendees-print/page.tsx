@@ -1,59 +1,16 @@
 import { getDb } from "@/lib/db"
+import { cookies } from "next/headers"
 import { PrintControls } from "./print-controls"
+import { AttendeesTable, type RegistrationRow } from "./attendees-table"
 
 export const dynamic = "force-dynamic"
 
-type FamilyMember = {
-  first_name: string | null
-  age: number | null
-}
-
-type RegistrationRow = {
-  id: number
-  family_last_name: string | null
-  address: string | null
-  city: string | null
-  state: string | null
-  zip: string | null
-  husband_phone: string | null
-  wife_phone: string | null
-  email: string | null
-  times_attended: number | null
-  family_members: FamilyMember[] | null
-}
-
-function formatPhones(husband?: string | null, wife?: string | null) {
-  const phones: string[] = []
-  if (husband) phones.push(husband)
-  if (wife && wife !== husband) phones.push(wife)
-  return phones
-}
-
-function splitParentsAndChildren(members: FamilyMember[]) {
-  const parents: string[] = []
-  const children: string[] = []
-  for (const m of members) {
-    const name = (m.first_name || "").trim()
-    if (!name) continue
-    const age = m.age
-    if (age === null || age === undefined || age >= 18) {
-      parents.push(name)
-    } else {
-      children.push(`${name} (${age})`)
-    }
-  }
-  return { parents, children }
-}
-
-function formatParents(parents: string[]) {
-  if (parents.length === 0) return ""
-  if (parents.length === 1) return parents[0]
-  // "Roger\n& Sabrina" style: first name on first line, "& rest" on second
-  return `${parents[0]}\n& ${parents.slice(1).join(", ")}`
-}
+const AUTH_TOKEN = process.env.AUTH_TOKEN || "default_auth_token_change_me"
 
 export default async function AttendeesPrintPage() {
   const sql = getDb()
+  const cookieStore = await cookies()
+  const isAdmin = cookieStore.get("admin_auth")?.value === AUTH_TOKEN
 
   const registrations = (await sql`
     SELECT
@@ -69,8 +26,10 @@ export default async function AttendeesPrintPage() {
       r.times_attended,
       json_agg(
         json_build_object(
+          'id', fm.id,
           'first_name', fm.first_name,
-          'age', fm.age
+          'age', fm.age,
+          'is_adult_override', fm.is_adult_override
         ) ORDER BY fm.age DESC NULLS LAST
       ) FILTER (WHERE fm.id IS NOT NULL) as family_members
     FROM registrations r
@@ -90,48 +49,13 @@ export default async function AttendeesPrintPage() {
           RENDEZVOUS {year} ATTENDEES
         </h1>
 
-        <table className="attendee-table w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="th-num">#</th>
-              <th>LAST NAME</th>
-              <th>PARENTS</th>
-              <th>CHILDREN</th>
-              <th>ADDRESS</th>
-              <th>CITY</th>
-              <th className="th-st">ST</th>
-              <th className="th-zip">ZIP</th>
-              <th>PHONES</th>
-              <th>EMAIL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {registrations.map((reg, idx) => {
-              const members = reg.family_members || []
-              const { parents, children } = splitParentsAndChildren(members)
-              const parentsStr = formatParents(parents)
-              const childrenStr = children.join(", ")
-              const phones = formatPhones(reg.husband_phone, reg.wife_phone)
-              const isFirstTimer = reg.times_attended === 1
-              const lastName = `${reg.family_last_name || ""}${isFirstTimer ? "*" : ""}`
+        {!isAdmin && (
+          <p className="no-print text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3 print:hidden">
+            Sign in as an admin to manually move names between PARENTS and CHILDREN.
+          </p>
+        )}
 
-              return (
-                <tr key={reg.id}>
-                  <td className="td-num">{idx + 1}</td>
-                  <td className="td-lastname font-bold">{lastName}</td>
-                  <td className="td-center whitespace-pre-line">{parentsStr}</td>
-                  <td className="td-center">{childrenStr}</td>
-                  <td className="td-center">{reg.address || ""}</td>
-                  <td className="td-center">{reg.city || ""}</td>
-                  <td className="td-center">{reg.state || ""}</td>
-                  <td className="td-center">{reg.zip || ""}</td>
-                  <td className="td-center whitespace-pre-line">{phones.join("\n")}</td>
-                  <td className="td-email">{reg.email || ""}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+        <AttendeesTable initialRegistrations={registrations} canEdit={isAdmin} />
       </main>
 
       <style>{`
