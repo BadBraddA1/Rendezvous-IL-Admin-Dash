@@ -110,13 +110,6 @@ export function QrCodesView({ rows }: { rows: QrRow[] }) {
         </CardContent>
       </Card>
 
-      <div className="hidden print:block mb-4">
-        <h1 className="text-xl font-bold">Rendezvous Check-In Codes</h1>
-        <p className="text-xs text-muted-foreground">
-          {filtered.length} families &middot; Generated {new Date().toLocaleDateString()}
-        </p>
-      </div>
-
       {filtered.length === 0 && (
         <Card className="no-print">
           <CardContent className="py-16 text-center text-muted-foreground">
