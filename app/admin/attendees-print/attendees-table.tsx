@@ -168,7 +168,7 @@ function NameList({
 
         return (
           <span key={m.id} className="inline-flex items-center gap-1.5 leading-tight">
-            <span className={isOverridden ? "underline decoration-dotted decoration-amber-600 underline-offset-2" : ""}>
+            <span className={isOverridden ? "underline decoration-dotted decoration-amber-600 underline-offset-2 print:no-underline print:decoration-transparent" : ""}>
               {prefix}
               {label}
             </span>
