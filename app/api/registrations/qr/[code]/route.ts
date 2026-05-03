@@ -48,9 +48,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       ORDER BY age DESC
     `
 
+    // Get t-shirt orders so the check-in screen can show sizes/colors
+    const tshirtOrders = await sql`
+      SELECT id, size, color, quantity, price
+      FROM tshirt_orders
+      WHERE registration_id = ${registration.id}
+      ORDER BY id ASC
+    `
+
     return NextResponse.json({
       ...serializeRow(registration),
       family_members: familyMembers.map(serializeRow),
+      tshirt_orders: tshirtOrders.map(serializeRow),
     })
   } catch (error) {
     console.error("[v0] Error looking up QR code:", error)
