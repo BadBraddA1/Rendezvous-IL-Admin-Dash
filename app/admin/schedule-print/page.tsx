@@ -11,6 +11,7 @@ type Row = {
   prayer_type: string | null
   schedule_status: string | null
   claimed_lesson_title: string | null
+  scripture_reading: string | null
 }
 
 const EVENT_DAYS = [
@@ -62,7 +63,8 @@ export default async function SchedulePrintPage() {
       vs.time_slot,
       vs.prayer_type,
       vs.schedule_status,
-      lt.title AS claimed_lesson_title
+      lt.title AS claimed_lesson_title,
+      vs.scripture_reading
     FROM volunteer_signups vs
     LEFT JOIN lesson_topics lt ON lt.id = vs.claimed_lesson_id
     WHERE vs.assigned_date IS NOT NULL AND vs.time_slot IS NOT NULL
@@ -98,25 +100,48 @@ export default async function SchedulePrintPage() {
                 </tr>
               </thead>
               <tbody>
-                {ROLES.map((role) => (
-                  <tr key={role.label}>
-                    <td className="td-role">{role.label}</td>
-                    {EVENT_DAYS.map((d) => {
-                      const entry = pickEntry(rawRows, d.date, slot, role)
-                      const lesson = entry?.claimed_lesson_title?.trim()
-                      return (
-                        <td key={d.date} className="td-cell">
-                          <div className="name">{entry?.volunteer_name || ""}</div>
-                          {lesson && (
-                            <div className="lesson" title={lesson}>
-                              {lesson}
-                            </div>
-                          )}
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
+                {ROLES.map((role) => {
+                  const isScriptureRole =
+                    role.label === "Scripture A" || role.label === "Scripture B"
+                  // Match the scripture-reading text from the paired Lesson presenter
+                  // (same date + slot + prayer_type) so the reference shows under the reader.
+                  const pairedLessonAB = role.label === "Scripture A" ? "A" : "B"
+                  return (
+                    <tr key={role.label}>
+                      <td className="td-role">{role.label}</td>
+                      {EVENT_DAYS.map((d) => {
+                        const entry = pickEntry(rawRows, d.date, slot, role)
+                        const lesson = entry?.claimed_lesson_title?.trim()
+                        let scripture: string | undefined
+                        if (isScriptureRole) {
+                          const lessonEntry = rawRows.find(
+                            (r) =>
+                              r.assigned_date === d.date &&
+                              r.time_slot === slot &&
+                              r.volunteer_type === "Presenting a lesson" &&
+                              r.prayer_type === pairedLessonAB,
+                          )
+                          scripture = lessonEntry?.scripture_reading?.trim() || undefined
+                        }
+                        return (
+                          <td key={d.date} className="td-cell">
+                            <div className="name">{entry?.volunteer_name || ""}</div>
+                            {lesson && !isScriptureRole && (
+                              <div className="lesson" title={lesson}>
+                                {lesson}
+                              </div>
+                            )}
+                            {scripture && (
+                              <div className="lesson" title={scripture}>
+                                {scripture}
+                              </div>
+                            )}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </section>
