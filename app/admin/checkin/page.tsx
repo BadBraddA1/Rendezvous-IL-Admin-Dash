@@ -4,9 +4,18 @@ import { useEffect, useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckIcon, AlertCircleIcon, DollarSignIcon, ScanIcon, XIcon, CameraIcon, KeyboardIcon, HomeIcon, UserIcon, PlusIcon, TrashIcon, KeyIcon, LockIcon } from "lucide-react"
+import { CheckIcon, AlertCircleIcon, DollarSignIcon, ScanIcon, XIcon, CameraIcon, KeyboardIcon, HomeIcon, UserIcon, PlusIcon, TrashIcon, KeyIcon, LockIcon, HandCoinsIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface FamilyMember {
   id: number
@@ -27,6 +36,7 @@ interface Registration {
   climbing_tower_total: number | null
   scholarship_donation: number | null
   scholarship_requested: boolean | null
+  scholarship_amount_paid: number | null
   lodging_type: string | null
   full_payment_paid: boolean | null
   family_member_count?: number
@@ -48,6 +58,10 @@ export default function CheckInPage() {
   const [roomKeys, setRoomKeys] = useState<string[]>([])
   const [keysTakenCount, setKeysTakenCount] = useState<number>(2)
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
+  const [scholarshipDialogOpen, setScholarshipDialogOpen] = useState(false)
+  const [scholarshipAmount, setScholarshipAmount] = useState("")
+  const [scholarshipNote, setScholarshipNote] = useState("")
+  const [savingScholarship, setSavingScholarship] = useState(false)
   const { toast } = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
   const html5QrCodeRef = useRef<any>(null)
@@ -357,6 +371,68 @@ export default function CheckInPage() {
     }
   }
 
+  const handleRecordScholarshipPayment = async () => {
+    if (!scannedRegistration) return
+    const amount = parseFloat(scholarshipAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Enter a positive dollar amount.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setSavingScholarship(true)
+    try {
+      const response = await fetch(
+        `/api/registrations/${scannedRegistration.id}/scholarship-payment`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount, note: scholarshipNote || undefined }),
+        },
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to record scholarship payment",
+          variant: "destructive",
+        })
+        return
+      }
+
+      toast({
+        title: "Scholarship payment recorded",
+        description: data.fullyCovered
+          ? `$${amount.toFixed(2)} collected. Balance fully paid - scholarship cleared.`
+          : `$${amount.toFixed(2)} collected and deducted from scholarship.`,
+      })
+
+      setScannedRegistration({
+        ...scannedRegistration,
+        payment_status: data.registration?.payment_status ?? "partial",
+        full_payment_paid: data.registration?.full_payment_paid ?? false,
+        scholarship_requested: data.registration?.scholarship_requested ?? false,
+        scholarship_amount_paid: Number(data.registration?.scholarship_amount_paid ?? 0),
+      })
+      setScholarshipDialogOpen(false)
+      setScholarshipAmount("")
+      setScholarshipNote("")
+    } catch (error) {
+      console.error("Error recording scholarship payment:", error)
+      toast({
+        title: "Error",
+        description: "Failed to record scholarship payment",
+        variant: "destructive",
+      })
+    } finally {
+      setSavingScholarship(false)
+    }
+  }
+
   const needsPayment = (registration: Registration) => {
     return registration.payment_status !== "paid"
   }
@@ -578,18 +654,22 @@ export default function CheckInPage() {
                 const adventure = Number(scannedRegistration.climbing_tower_total || 0)
                 const donation = Number(scannedRegistration.scholarship_donation || 0)
                 const fullTotal = regFee + lodging + tshirts + adventure + donation
+                const scholarshipPaid = Number(scannedRegistration.scholarship_amount_paid || 0)
                 const isPaid = scannedRegistration.payment_status === "paid"
                 const isPartial = scannedRegistration.payment_status === "partial"
-                
+
                 // Calculate amount due based on payment status:
                 // - paid: $0 due
-                // - partial: reg fee already collected, only lodging + extras due
+                // - scholarship-partial (any scholarship_amount_paid): full total minus what was collected
+                // - legacy partial (reg fee already collected online): lodging + extras only
                 // - pending: full amount due
-                const amountDue = isPaid 
-                  ? 0 
-                  : isPartial 
-                    ? lodging + tshirts + adventure + donation 
-                    : fullTotal
+                const amountDue = isPaid
+                  ? 0
+                  : scholarshipPaid > 0
+                    ? Math.max(fullTotal - scholarshipPaid, 0)
+                    : isPartial
+                      ? lodging + tshirts + adventure + donation
+                      : fullTotal
 
                 return (
                   <div className={`p-4 rounded-lg ${isPaid ? "bg-green-500/10" : isPartial ? "bg-orange-500/10" : "bg-amber-500/10"}`}>
@@ -614,6 +694,14 @@ export default function CheckInPage() {
                             <span className="font-semibold block">You can check this family in, but you are not authorized to collect payment.</span>
                             <span className="text-amber-700">Please direct them to an admin to settle their balance.</span>
                           </div>
+                        </div>
+                      )}
+                      {Number(scannedRegistration.scholarship_amount_paid || 0) > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-green-50 border border-green-200 rounded-lg">
+                          <HandCoinsIcon className="size-4 text-green-700 shrink-0" />
+                          <span className="text-green-700 text-xs">
+                            ${Number(scannedRegistration.scholarship_amount_paid || 0).toFixed(2)} already collected toward scholarship
+                          </span>
                         </div>
                       )}
                       {isPartial && regFee > 0 && (
@@ -663,6 +751,20 @@ export default function CheckInPage() {
                       <Button onClick={handlePaymentReceived} className="w-full mt-4 gap-2" variant="outline">
                         <DollarSignIcon className="size-4" />
                         Mark Payment Received (${amountDue.toFixed(2)})
+                      </Button>
+                    )}
+                    {!isPaid && scannedRegistration.scholarship_requested && isAdmin && (
+                      <Button
+                        onClick={() => {
+                          setScholarshipAmount("")
+                          setScholarshipNote("")
+                          setScholarshipDialogOpen(true)
+                        }}
+                        className="w-full mt-2 gap-2"
+                        variant="secondary"
+                      >
+                        <HandCoinsIcon className="size-4" />
+                        Collect Partial Payment (Reduce Scholarship)
                       </Button>
                     )}
                   </div>
@@ -789,6 +891,114 @@ export default function CheckInPage() {
           </Card>
         )}
       </div>
+
+      <Dialog open={scholarshipDialogOpen} onOpenChange={setScholarshipDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HandCoinsIcon className="size-4 text-purple-600" />
+              Collect Partial Payment
+            </DialogTitle>
+            <DialogDescription>
+              {scannedRegistration ? (
+                <>
+                  Record an amount the <strong>{scannedRegistration.family_last_name} family</strong> is paying.
+                  This will be deducted from their scholarship balance.
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+
+          {scannedRegistration && (() => {
+            const regFee = Number(scannedRegistration.registration_fee || 0)
+            const lodging = Number(scannedRegistration.lodging_total || 0)
+            const tshirts = Number(scannedRegistration.tshirt_total || 0)
+            const adventure = Number(scannedRegistration.climbing_tower_total || 0)
+            const donation = Number(scannedRegistration.scholarship_donation || 0)
+            const fullTotal = regFee + lodging + tshirts + adventure + donation
+            const alreadyPaid = Number(scannedRegistration.scholarship_amount_paid || 0)
+            const remaining = Math.max(fullTotal - alreadyPaid, 0)
+            const parsed = parseFloat(scholarshipAmount)
+            const newRemaining = Number.isFinite(parsed) && parsed > 0
+              ? Math.max(remaining - parsed, 0)
+              : remaining
+
+            return (
+              <div className="space-y-4 py-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground text-xs">Full Balance</Label>
+                    <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground items-center">
+                      ${fullTotal.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-muted-foreground text-xs">Already Collected</Label>
+                    <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground items-center">
+                      ${alreadyPaid.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="scholarship-amount">Amount Collecting Now</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                    <Input
+                      id="scholarship-amount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={scholarshipAmount}
+                      onChange={(e) => setScholarshipAmount(e.target.value)}
+                      className="pl-6"
+                      placeholder="0.00"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="scholarship-note">
+                    Note <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Input
+                    id="scholarship-note"
+                    value={scholarshipNote}
+                    onChange={(e) => setScholarshipNote(e.target.value)}
+                    placeholder="e.g. cash, check #1234..."
+                  />
+                </div>
+
+                <div className="rounded-md bg-purple-50 border border-purple-200 px-3 py-2 text-xs space-y-1">
+                  <div className="flex justify-between text-purple-800">
+                    <span>Remaining scholarship after this payment</span>
+                    <span className="font-semibold">${newRemaining.toFixed(2)}</span>
+                  </div>
+                  {Number.isFinite(parsed) && parsed >= remaining && remaining > 0 && (
+                    <div className="text-green-700 font-medium">
+                      This covers the full balance - scholarship will be cleared.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setScholarshipDialogOpen(false)}
+              disabled={savingScholarship}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleRecordScholarshipPayment} disabled={savingScholarship}>
+              {savingScholarship ? "Saving..." : "Record Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
