@@ -163,22 +163,3 @@ export async function handleExportAttendees() {
   }
 }
 
-export async function handleExportPrayerVolunteers() {
-  try {
-    const response = await fetch("/api/export/prayer-volunteers")
-    if (!response.ok) throw new Error("Failed to export")
-
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `prayer-volunteers-${new Date().toISOString().split("T")[0]}.csv`
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-  } catch (error) {
-    console.error("Error exporting prayer volunteers:", error)
-    alert("Failed to export prayer volunteers list")
-  }
-}

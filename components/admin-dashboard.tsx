@@ -47,7 +47,7 @@ import { CountdownTimer } from "./countdown-timer"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { PaymentStatusDialog } from "./payment-status-dialog"
-import { handleExportBadges, handleExportFullData, handleExportLWCC, handleExportContactInfo, handleExportResendTshirtOrdered, handleExportResendNoTshirt, handleExportTshirtBreakdown, handleExportAttendees, handleExportPrayerVolunteers } from "./export-badges"
+import { handleExportBadges, handleExportFullData, handleExportLWCC, handleExportContactInfo, handleExportResendTshirtOrdered, handleExportResendNoTshirt, handleExportTshirtBreakdown, handleExportAttendees } from "./export-badges"
 import { DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
 
 interface Registration {
@@ -341,8 +341,8 @@ export function AdminDashboard() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1">Volunteer Reports</DropdownMenuLabel>
-                <DropdownMenuItem onClick={handleExportPrayerVolunteers}>
-                  <DownloadIcon className="mr-2 size-4" />
+                <DropdownMenuItem onClick={() => window.open("/admin/prayer-volunteers-print", "_blank")}>
+                  <PrinterIcon className="mr-2 size-4" />
                   Prayer Volunteers
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
