@@ -132,8 +132,6 @@ export default async function AttendeesPrintPage() {
             })}
           </tbody>
         </table>
-
-        <p className="mt-3 text-xs italic">* = 1st time at Rendezvous!</p>
       </main>
 
       <style>{`
