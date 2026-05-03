@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { CheckIcon, KeyIcon, ClockIcon, HomeIcon, AlertCircleIcon, UserIcon } from "lucide-react"
+import { CheckIcon, KeyIcon, ClockIcon, HomeIcon, AlertCircleIcon, UserIcon, Undo2Icon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
@@ -36,6 +36,38 @@ export default function CheckedInPage() {
   )
   const registrations = Array.isArray(data) ? data : []
   const loading = isLoading
+
+  const handleUndoCheckIn = async (id: number, familyName: string) => {
+    if (!confirm(`Undo check-in for the ${familyName} family? This will clear their check-in time and any room keys assigned.`)) {
+      return
+    }
+    try {
+      const response = await fetch(`${BASE_URL}/api/registrations/${id}/checkin`, {
+        method: "DELETE",
+      })
+      if (response.ok) {
+        toast({
+          title: "Check-in undone",
+          description: `${familyName} family has been moved back to not checked in.`,
+        })
+        mutate()
+      } else {
+        const data = await response.json().catch(() => ({}))
+        toast({
+          title: "Error",
+          description: data.error || "Failed to undo check-in",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error undoing check-in:", error)
+      toast({
+        title: "Error",
+        description: "Failed to undo check-in",
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleMarkKeysReturned = async (id: number, returned: boolean) => {
     try {
@@ -274,6 +306,7 @@ export default function CheckedInPage() {
                     <TableHead>Lodging</TableHead>
                     <TableHead>Checked In At</TableHead>
                     <TableHead>Payment</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -308,6 +341,18 @@ export default function CheckedInPage() {
                         <Badge variant={reg.payment_status === "paid" ? "default" : "secondary"}>
                           {reg.payment_status || "pending"}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUndoCheckIn(reg.id, reg.family_last_name)}
+                          className="gap-1 text-amber-700 border-amber-300 hover:bg-amber-50"
+                          title="Undo check-in (testing only)"
+                        >
+                          <Undo2Icon className="size-3" />
+                          Undo Check-In
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
