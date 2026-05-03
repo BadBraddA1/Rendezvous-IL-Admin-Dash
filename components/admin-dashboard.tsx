@@ -31,6 +31,8 @@ import {
   LightbulbIcon,
   Mail,
   KeyIcon,
+  QrCodeIcon,
+  PrinterIcon,
   BookOpenIcon,
   LogOutIcon,
   MountainSnowIcon,
@@ -45,7 +47,7 @@ import { CountdownTimer } from "./countdown-timer"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { PaymentStatusDialog } from "./payment-status-dialog"
-import { handleExportBadges, handleExportFullData, handleExportLWCC, handleExportContactInfo, handleExportResendTshirtOrdered, handleExportResendNoTshirt, handleExportTshirtBreakdown, handleExportAttendees } from "./export-badges"
+import { handleExportBadges, handleExportFullData, handleExportLWCC, handleExportContactInfo, handleExportResendTshirtOrdered, handleExportResendNoTshirt, handleExportTshirtBreakdown, handleExportAttendees, handleExportPrayerVolunteers } from "./export-badges"
 import { DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
 
 interface Registration {
@@ -316,6 +318,10 @@ export function AdminDashboard() {
                   <UsersIcon className="mr-2 size-4" />
                   Attendees List (2025 Format)
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open("/admin/attendees-print", "_blank")}>
+                  <PrinterIcon className="mr-2 size-4" />
+                  Print Attendees List (2025 Format)
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleExportBadges}>
                   <DownloadIcon className="mr-2 size-4" />
@@ -332,6 +338,12 @@ export function AdminDashboard() {
                 <DropdownMenuItem onClick={handleExportContactInfo}>
                   <DownloadIcon className="mr-2 size-4" />
                   Contact Information
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1">Volunteer Reports</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handleExportPrayerVolunteers}>
+                  <DownloadIcon className="mr-2 size-4" />
+                  Prayer Volunteers
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1">T-Shirt Reports</DropdownMenuLabel>
@@ -515,6 +527,19 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground">Pre-assign motel room keys</div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Print QR Codes card */}
+          <Link href="/admin/qr-codes">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Print QR Codes</CardTitle>
+                <QrCodeIcon className="size-4 text-slate-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Printable list of all check-in codes</div>
               </CardContent>
             </Card>
           </Link>
