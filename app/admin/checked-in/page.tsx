@@ -9,9 +9,11 @@ import { CheckIcon, KeyIcon, ClockIcon, HomeIcon, AlertCircleIcon, UserIcon, Und
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? ""
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+// Use relative URLs so the page always calls its own deployment.
+// (Previously this used NEXT_PUBLIC_BASE_URL which could point to a
+// different origin and silently return empty data.)
+const fetcher = (url: string) =>
+  fetch(url, { cache: "no-store" }).then((r) => r.json())
 
 interface CheckedInRegistration {
   id: number
@@ -30,7 +32,7 @@ interface CheckedInRegistration {
 export default function CheckedInPage() {
   const { toast } = useToast()
   const { data, isLoading, mutate } = useSWR<CheckedInRegistration[]>(
-    `${BASE_URL}/api/registrations/checked-in`,
+    `/api/registrations/checked-in`,
     fetcher,
     { refreshInterval: 30000 }
   )
@@ -42,7 +44,7 @@ export default function CheckedInPage() {
       return
     }
     try {
-      const response = await fetch(`${BASE_URL}/api/registrations/${id}/checkin`, {
+      const response = await fetch(`/api/registrations/${id}/checkin`, {
         method: "DELETE",
       })
       if (response.ok) {
@@ -71,7 +73,7 @@ export default function CheckedInPage() {
 
   const handleMarkKeysReturned = async (id: number, returned: boolean) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/registrations/${id}/keys-returned`, {
+      const response = await fetch(`/api/registrations/${id}/keys-returned`, {
         method: returned ? "DELETE" : "POST",
       })
 

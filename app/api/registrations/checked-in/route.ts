@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 function serializeRow(row: any) {
   return Object.fromEntries(
     Object.entries(row).map(([key, value]) => [
