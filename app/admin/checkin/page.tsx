@@ -777,12 +777,7 @@ export default function CheckInPage() {
                           <span>${adventure.toFixed(2)}</span>
                         </div>
                       )}
-                      {donation > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Scholarship Donation</span>
-                          <span>${donation.toFixed(2)}</span>
-                        </div>
-                      )}
+                      {/* Scholarship Donation intentionally hidden from check-in summary */}
                       <div className="flex justify-between pt-2 border-t font-semibold text-base">
                         <span>{isPartial ? "Amount to Collect" : "Total"}</span>
                         <span className={isPaid ? "text-green-600" : isPartial ? "text-orange-600" : "text-amber-600"}>
