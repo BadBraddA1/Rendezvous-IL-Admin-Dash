@@ -31,6 +31,7 @@ import {
   LightbulbIcon,
   Mail,
   KeyIcon,
+  QrCodeIcon,
   BookOpenIcon,
   LogOutIcon,
   MountainSnowIcon,
@@ -515,6 +516,19 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground">Pre-assign motel room keys</div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Print QR Codes card */}
+          <Link href="/admin/qr-codes">
+            <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Print QR Codes</CardTitle>
+                <QrCodeIcon className="size-4 text-slate-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground">Printable list of all check-in codes</div>
               </CardContent>
             </Card>
           </Link>
