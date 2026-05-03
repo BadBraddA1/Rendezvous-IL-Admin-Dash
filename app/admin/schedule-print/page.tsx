@@ -12,6 +12,7 @@ type Row = {
   schedule_status: string | null
   claimed_lesson_title: string | null
   scripture_reading: string | null
+  family_last_name: string | null
 }
 
 const EVENT_DAYS = [
@@ -55,6 +56,10 @@ export default async function SchedulePrintPage() {
   const sql = getDb()
 
   // Pull all scheduled entries; we'll bucket them client-side below.
+  // - Fall back to lesson_topics.description (which holds the scripture
+  //   reference, e.g. "Gal 1:6-7") when the presenter hasn't yet filled in
+  //   vs.scripture_reading.
+  // - Join registrations to surface each volunteer's family last name.
   const rawRows = (await sql`
     SELECT
       vs.volunteer_name,
@@ -64,9 +69,11 @@ export default async function SchedulePrintPage() {
       vs.prayer_type,
       vs.schedule_status,
       lt.title AS claimed_lesson_title,
-      vs.scripture_reading
+      COALESCE(NULLIF(TRIM(vs.scripture_reading), ''), TRIM(lt.description)) AS scripture_reading,
+      r.family_last_name
     FROM volunteer_signups vs
     LEFT JOIN lesson_topics lt ON lt.id = vs.claimed_lesson_id
+    LEFT JOIN registrations r ON r.id = vs.registration_id
     WHERE vs.assigned_date IS NOT NULL AND vs.time_slot IS NOT NULL
     ORDER BY vs.assigned_date, vs.time_slot, vs.volunteer_type, vs.volunteer_name
   `) as unknown as Row[]
@@ -123,9 +130,13 @@ export default async function SchedulePrintPage() {
                           )
                           scripture = lessonEntry?.scripture_reading?.trim() || undefined
                         }
+                        const fullName = [entry?.volunteer_name, entry?.family_last_name]
+                          .filter(Boolean)
+                          .join(" ")
+                          .trim()
                         return (
                           <td key={d.date} className="td-cell">
-                            <div className="name">{entry?.volunteer_name || ""}</div>
+                            <div className="name">{fullName}</div>
                             {lesson && !isScriptureRole && (
                               <div className="lesson" title={lesson}>
                                 {lesson}
