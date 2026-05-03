@@ -136,7 +136,6 @@ export async function GET() {
         
         return row.join(",")
       }),
-      `"* = 1st time at Rendezvous!",,,,,,,,,,`,
     ]
 
     const csv = csvRows.join("\n")
