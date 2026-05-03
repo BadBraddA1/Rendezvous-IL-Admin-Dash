@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckIcon, AlertCircleIcon, DollarSignIcon, ScanIcon, XIcon, CameraIcon, KeyboardIcon, HomeIcon, UserIcon, PlusIcon, TrashIcon, KeyIcon } from "lucide-react"
+import { CheckIcon, AlertCircleIcon, DollarSignIcon, ScanIcon, XIcon, CameraIcon, KeyboardIcon, HomeIcon, UserIcon, PlusIcon, TrashIcon, KeyIcon, LockIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
 
@@ -47,6 +47,7 @@ export default function CheckInPage() {
   const [cameraStarting, setCameraStarting] = useState(false)
   const [roomKeys, setRoomKeys] = useState<string[]>([])
   const [keysTakenCount, setKeysTakenCount] = useState<number>(2)
+  const [isAdmin, setIsAdmin] = useState<boolean>(false)
   const { toast } = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
   const html5QrCodeRef = useRef<any>(null)
@@ -59,6 +60,19 @@ export default function CheckInPage() {
     return () => {
       isMountedRef.current = false
     }
+  }, [])
+
+  // Detect whether the user is authenticated as an admin (controls whether
+  // payment can be collected for scholarship-requested families)
+  useEffect(() => {
+    fetch("/api/admin/auth-status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMountedRef.current) setIsAdmin(!!data.isAdmin)
+      })
+      .catch(() => {
+        if (isMountedRef.current) setIsAdmin(false)
+      })
   }, [])
 
   // Start/stop camera based on scanMode and scannedRegistration
@@ -593,6 +607,15 @@ export default function CheckInPage() {
                           <span className="text-purple-600 text-xs">Handle with discretion.</span>
                         </div>
                       )}
+                      {scannedRegistration.scholarship_requested && !isAdmin && !isPaid && (
+                        <div className="flex items-start gap-2 px-3 py-2 mb-2 bg-amber-50 border border-amber-200 rounded-lg">
+                          <LockIcon className="size-4 text-amber-700 mt-0.5 shrink-0" />
+                          <div className="text-xs text-amber-800">
+                            <span className="font-semibold block">You can check this family in, but you are not authorized to collect payment.</span>
+                            <span className="text-amber-700">Please direct them to an admin to settle their balance.</span>
+                          </div>
+                        </div>
+                      )}
                       {isPartial && regFee > 0 && (
                         <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-green-50 border border-green-200 rounded-lg">
                           <CheckIcon className="size-4 text-green-600" />
@@ -636,7 +659,7 @@ export default function CheckInPage() {
                         </span>
                       </div>
                     </div>
-                    {!isPaid && (
+                    {!isPaid && !(scannedRegistration.scholarship_requested && !isAdmin) && (
                       <Button onClick={handlePaymentReceived} className="w-full mt-4 gap-2" variant="outline">
                         <DollarSignIcon className="size-4" />
                         Mark Payment Received (${amountDue.toFixed(2)})
