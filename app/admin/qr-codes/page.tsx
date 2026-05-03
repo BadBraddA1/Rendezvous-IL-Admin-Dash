@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftIcon, QrCodeIcon } from "lucide-react"
-import { sql } from "@/lib/db"
+import { getDb } from "@/lib/db"
 import { QrCodesView } from "./qr-codes-view"
 
 export const dynamic = "force-dynamic"
@@ -17,6 +17,7 @@ interface QrRow {
 
 async function getQrCodes(): Promise<QrRow[]> {
   try {
+    const sql = getDb()
     const rows = (await sql`
       SELECT
         r.id,
@@ -30,6 +31,7 @@ async function getQrCodes(): Promise<QrRow[]> {
       GROUP BY r.id
       ORDER BY r.family_last_name ASC, r.id ASC
     `) as QrRow[]
+    console.log("[v0] QR codes page fetched", rows.length, "rows")
     return rows
   } catch (error) {
     console.error("[v0] Error fetching QR codes:", error)
