@@ -167,20 +167,20 @@ function NameList({
           variant === "parent" ? "Move to CHILDREN" : "Move to PARENTS"
 
         return (
-          <span key={m.id} className="inline-flex items-center gap-1 leading-tight">
-            <span className={isOverridden ? "underline decoration-dotted decoration-amber-600" : ""}>
+          <span key={m.id} className="inline-flex items-center gap-1.5 leading-tight">
+            <span className={isOverridden ? "underline decoration-dotted decoration-amber-600 underline-offset-2" : ""}>
               {prefix}
               {label}
             </span>
             {canEdit && (
-              <span className="no-print inline-flex items-center print:hidden">
+              <span className="no-print inline-flex items-center gap-1 print:hidden">
                 <button
                   type="button"
                   onClick={() => onSetRole(m.id, oppositeRole)}
                   disabled={savingId === m.id}
                   title={swapTitle}
                   aria-label={swapTitle}
-                  className="ml-0.5 rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 disabled:opacity-40"
+                  className="inline-flex items-center justify-center size-5 rounded border border-slate-300 bg-white text-slate-600 shadow-sm hover:bg-blue-600 hover:text-white hover:border-blue-600 active:scale-95 transition disabled:opacity-40"
                 >
                   {savingId === m.id ? (
                     <Loader2Icon className="size-3 animate-spin" />
@@ -195,7 +195,7 @@ function NameList({
                     disabled={savingId === m.id}
                     title="Reset to age-based default"
                     aria-label="Reset to age-based default"
-                    className="rounded p-0.5 text-amber-600 hover:bg-amber-100"
+                    className="inline-flex items-center justify-center size-5 rounded border border-amber-300 bg-amber-50 text-amber-700 shadow-sm hover:bg-amber-200 active:scale-95 transition"
                   >
                     <RotateCcwIcon className="size-3" />
                   </button>

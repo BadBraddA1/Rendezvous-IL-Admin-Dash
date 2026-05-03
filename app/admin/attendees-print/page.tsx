@@ -49,7 +49,11 @@ export default async function AttendeesPrintPage() {
           RENDEZVOUS {year} ATTENDEES
         </h1>
 
-        {!isAdmin && (
+        {isAdmin ? (
+          <p className="no-print text-xs text-slate-700 bg-blue-50 border border-blue-200 rounded px-3 py-2 mb-3 print:hidden">
+            <span className="font-semibold">Edit mode:</span> click the arrow next to any name to move it between PARENTS and CHILDREN. Manual overrides show with a dotted underline; click the reset icon to revert to age-based default. Edits are saved automatically and hidden when printing.
+          </p>
+        ) : (
           <p className="no-print text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3 print:hidden">
             Sign in as an admin to manually move names between PARENTS and CHILDREN.
           </p>
