@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { emailConfigured, sendkit } from "@/lib/sendkit"
+import { emailConfigured, emailFrom, sendkit } from "@/lib/sendkit"
 
 function getBaseUrl(request: NextRequest): string {
   const envUrl = process.env.NEXT_PUBLIC_BASE_URL
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await sendkit.emails.send({
-      from: "Rendezvous 2026 <noreply@mail.rendezvousil.org>",
+      from: emailFrom(),
       to: testEmail,
       subject,
       html,

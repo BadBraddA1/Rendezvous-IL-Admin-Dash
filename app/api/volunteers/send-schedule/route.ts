@@ -15,7 +15,6 @@ function getBaseUrl(request: NextRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const resend = sendBatch
     const baseUrl = getBaseUrl(request)
     const sql = getDb()
     const { volunteerIds } = await request.json().catch(() => ({ volunteerIds: null }))

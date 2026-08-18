@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No eligible volunteers to remind" }, { status: 400 })
   }
 
-  const resend = sendBatch
   let sent = 0
   let failed = 0
 
