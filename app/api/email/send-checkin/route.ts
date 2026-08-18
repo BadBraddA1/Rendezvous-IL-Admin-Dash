@@ -1,14 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { FROM_ADDRESS, sendBatch } from "@/lib/email"
+import { emailConfigured } from "@/lib/sendkit"
 
 export async function POST(request: NextRequest) {
   try {
     const { registrationId, sendToAll } = await request.json()
     const sql = getDb()
 
-    if (!process.env.Resend_API) {
-      return NextResponse.json({ error: "Email API not configured" }, { status: 500 })
+    if (!emailConfigured()) {
+      return NextResponse.json({ error: "Email API not configured (SENDKIT_API_KEY)" }, { status: 500 })
     }
 
     // Get registration(s) to send to

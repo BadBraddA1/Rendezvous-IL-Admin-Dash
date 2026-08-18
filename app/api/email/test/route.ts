@@ -1,13 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { Resend } from "resend"
+import { emailConfigured, sendkit } from "@/lib/sendkit"
 import { FROM_ADDRESS } from "@/lib/email"
-
-function getResend() {
-  if (!process.env.Resend_API) {
-    throw new Error("Resend_API environment variable is not set")
-  }
-  return new Resend(process.env.Resend_API)
-}
 
 export function buildCheckinEmailHtml() {
   return `<!DOCTYPE html>
@@ -89,8 +82,8 @@ export async function POST(request: NextRequest) {
 
     // For dry-run API status checks, just verify the API key exists
     if (dryRun) {
-      if (!process.env.Resend_API) {
-        return NextResponse.json({ error: "Resend_API environment variable is not set" }, { status: 500 })
+      if (!emailConfigured()) {
+        return NextResponse.json({ error: "SENDKIT_API_KEY environment variable is not set" }, { status: 500 })
       }
       return NextResponse.json({ status: "configured" })
     }
@@ -99,7 +92,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Test email address is required" }, { status: 400 })
     }
 
-    const resend = getResend()
+    if (!emailConfigured()) {
+      return NextResponse.json({ error: "SENDKIT_API_KEY environment variable is not set" }, { status: 500 })
+    }
 
     let html: string
     let emailSubject: string
@@ -115,7 +110,7 @@ export async function POST(request: NextRequest) {
       emailSubject = `[TEST] ${subject}`
     }
 
-    const { error } = await resend.emails.send({
+    const { error } = await sendkit.emails.send({
       from: FROM_ADDRESS,
       to: testEmail,
       subject: emailSubject,

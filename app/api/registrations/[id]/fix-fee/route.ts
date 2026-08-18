@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { Resend } from "resend"
+import { emailConfigured, sendkit } from "@/lib/sendkit"
 import { FROM_ADDRESS } from "@/lib/email"
 
 export async function POST(
@@ -38,13 +38,12 @@ export async function POST(
 
     const reg = registrations[0]
 
-    // Try to send fee correction email via Resend
+    // Try to send fee correction email via SendKit
     let emailSent = false
     let emailError = ""
 
-    if (process.env.Resend_API) {
+    if (emailConfigured()) {
       try {
-        const resend = new Resend(process.env.Resend_API)
         const totalOwed = Number(newFee) + Number(reg.lodging_total || 0) + Number(reg.scholarship_donation || 0)
 
         const emailHtml = `
@@ -87,7 +86,7 @@ export async function POST(
   </table>
 </body></html>`
 
-        const { error } = await resend.emails.send({
+        const { error } = await sendkit.emails.send({
           from: FROM_ADDRESS,
           to: reg.email,
           subject: "Your Registration Fee Has Been Updated - Rendezvous 2026",
@@ -107,7 +106,7 @@ export async function POST(
     return NextResponse.json({
       message: emailSent
         ? "Fee updated and email sent successfully"
-        : `Fee updated successfully. Email not sent: ${emailError || "No email API key configured. To send emails to registrants, verify your domain at resend.com/domains."}`,
+        : `Fee updated successfully. Email not sent: ${emailError || "No email API key configured. To send emails to registrants, set SENDKIT_API_KEY and verify your domain in the SendKit dashboard under Domains."}`,
       emailSent,
     })
   } catch (error) {

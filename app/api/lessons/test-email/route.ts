@@ -1,13 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { Resend } from "resend"
-
-function getResend() {
-  if (!process.env.Resend_API) {
-    throw new Error("Resend_API environment variable is not set")
-  }
-  return new Resend(process.env.Resend_API)
-}
+import { emailConfigured, sendkit } from "@/lib/sendkit"
 
 function getBaseUrl(request: NextRequest): string {
   const envUrl = process.env.NEXT_PUBLIC_BASE_URL
@@ -34,11 +27,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "testEmail is required" }, { status: 400 })
   }
 
-  let resend
-  try {
-    resend = getResend()
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+  if (!emailConfigured()) {
+    return NextResponse.json({ error: "SENDKIT_API_KEY environment variable is not set" }, { status: 500 })
   }
 
   // Get topic count for the email
@@ -66,12 +56,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await resend.emails.send({
+    const result = await sendkit.emails.send({
       from: "Rendezvous 2026 <noreply@mail.rendezvousil.org>",
       to: testEmail,
       subject,
       html,
     })
+
+    // The SendKit client reports API failures via `error` rather than throwing.
+    if (result.error) {
+      return NextResponse.json({ error: result.error.message }, { status: 500 })
+    }
 
     return NextResponse.json({
       success: true,

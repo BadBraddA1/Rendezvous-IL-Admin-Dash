@@ -59,7 +59,7 @@ export function FixFeeDialog({
           title: "Fee updated",
           description: result.emailSent
             ? `Registration fee updated to $${parsedNew.toFixed(2)} and a notification email has been sent.`
-            : `Registration fee updated to $${parsedNew.toFixed(2)}. Note: Email could not be sent - verify your domain at resend.com/domains to enable email notifications.`,
+            : `Registration fee updated to $${parsedNew.toFixed(2)}. Note: Email could not be sent - verify your domain in the SendKit dashboard under Domains to enable email notifications.`,
         })
         onOpenChange(false)
         onSuccess()

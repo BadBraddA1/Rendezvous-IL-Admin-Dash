@@ -1,19 +1,18 @@
-import { Resend } from "resend"
+import { emailConfigured, emailFrom, sendkit } from "@/lib/sendkit"
 
 // Set the EMAIL_FROM environment variable to your verified domain email in production.
-// Default: Resend IL <noreply@braddcorp.com>
-export const FROM_ADDRESS = process.env.EMAIL_FROM || "Rendezvous IL <noreply@braddcorp.com>"
+// Default: Rendezvous IL <noreply@braddcorp.com> (braddcorp.com is the verified SendKit domain)
+export const FROM_ADDRESS = emailFrom()
 
-function getResend() {
-  if (!process.env.Resend_API) {
-    throw new Error("Resend_API environment variable is not set")
+function assertEmailConfigured() {
+  if (!emailConfigured()) {
+    throw new Error("SENDKIT_API_KEY environment variable is not set")
   }
-  return new Resend(process.env.Resend_API)
 }
 
 // ---------------------------------------------------------------------------
 // Rate-limited batch sender
-// Resend allows 5 requests/second per team. We send in batches of 4 with a
+// SendKit rate-limits per API key. We send in batches of 4 with a
 // 300ms pause between batches, and retry once on a 429 response.
 // ---------------------------------------------------------------------------
 const BATCH_SIZE = 4
@@ -37,7 +36,7 @@ export interface BatchSendResult {
 }
 
 export async function sendBatch(payloads: EmailPayload[]): Promise<BatchSendResult[]> {
-  const resend = getResend()
+  assertEmailConfigured()
   const results: BatchSendResult[] = []
 
   for (let i = 0; i < payloads.length; i += BATCH_SIZE) {
@@ -48,7 +47,7 @@ export async function sendBatch(payloads: EmailPayload[]): Promise<BatchSendResu
       batch.map(async (payload): Promise<BatchSendResult> => {
         const send = async (attempt: number): Promise<BatchSendResult> => {
           try {
-            const { error } = await resend.emails.send({
+            const { error } = await sendkit.emails.send({
               from: FROM_ADDRESS,
               to: payload.to,
               subject: payload.subject,
@@ -56,7 +55,7 @@ export async function sendBatch(payloads: EmailPayload[]): Promise<BatchSendResu
             })
             if (error) {
               // Retry once on rate-limit error
-              if ((error as any)?.statusCode === 429 && attempt === 0) {
+              if (error.statusCode === 429 && attempt === 0) {
                 await sleep(RETRY_DELAY_MS)
                 return send(1)
               }
@@ -101,7 +100,7 @@ export async function sendRegistrationConfirmation(data: {
   checkinQrCode: string
 }) {
   try {
-    const resend = getResend()
+    assertEmailConfigured()
     const totalOwed = data.registrationFee + data.lodgingTotal + data.tshirtTotal + data.climbingTowerTotal + data.scholarshipDonation
 
     const membersHtml = data.familyMembers.map(m =>
@@ -155,7 +154,7 @@ export async function sendRegistrationConfirmation(data: {
   </table>
 </body></html>`
 
-    const { data: emailData, error } = await resend.emails.send({
+    const { data: emailData, error } = await sendkit.emails.send({
       from: FROM_ADDRESS,
       to: data.email,
       subject: "Registration Confirmed - Rendezvous 2026",
@@ -282,7 +281,7 @@ export async function sendCustomEmail(data: {
   message: string
 }) {
   try {
-    const resend = getResend()
+    assertEmailConfigured()
 
     const html = `
 <!DOCTYPE html>
@@ -307,7 +306,7 @@ export async function sendCustomEmail(data: {
   </table>
 </body></html>`
 
-    const { data: emailData, error } = await resend.emails.send({
+    const { data: emailData, error } = await sendkit.emails.send({
       from: FROM_ADDRESS,
       to: data.to,
       subject: data.subject,

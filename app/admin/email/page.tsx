@@ -35,7 +35,7 @@ export default function EmailPage() {
   const [sendingSms, setSendingSms] = useState(false)
   const { toast } = useToast()
 
-  // Check if Resend API is configured
+  // Check if SendKit API is configured
   useEffect(() => {
     fetch("/api/email/test", {
       method: "POST",
@@ -250,13 +250,13 @@ export default function EmailPage() {
           {apiStatus === "configured" && (
             <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
               <CheckCircle2 className="size-4" />
-              Resend API Connected
+              SendKit API Connected
             </div>
           )}
           {apiStatus === "missing" && (
             <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-1.5 rounded-full">
               <XCircle className="size-4" />
-              Resend API Not Configured
+              SendKit API Not Configured
             </div>
           )}
         </div>
@@ -295,7 +295,7 @@ export default function EmailPage() {
             <CardContent className="text-sm text-blue-900 space-y-2">
               <p><strong>When you click &quot;Send Test Email&quot;:</strong></p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>A <strong>real email</strong> is sent via Resend API to the address you enter</li>
+                <li>A <strong>real email</strong> is sent via SendKit API to the address you enter</li>
                 <li>Check-In emails include a sample QR code and placeholder payment data</li>
                 <li>Custom emails use the subject/message you typed above</li>
                 <li>Subject line is prefixed with <code className="bg-blue-100 px-1 rounded">[TEST]</code> to identify test emails</li>
