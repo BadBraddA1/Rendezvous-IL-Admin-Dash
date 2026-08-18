@@ -152,9 +152,6 @@ importers:
       recharts:
         specifier: 2.15.4
         version: 2.15.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      resend:
-        specifier: 6.6.0
-        version: 6.6.0(@react-email/render@2.0.5(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
       sonner:
         specifier: ^1.7.4
         version: 1.7.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
